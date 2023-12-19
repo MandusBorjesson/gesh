@@ -1,4 +1,6 @@
 #include "dbus-abstraction.h"
+#include "setting.h"
+#include "settingSourceDefault.h"
 #include <sdbus-c++/sdbus-c++.h>
 #include <iostream>
 #include <memory>
@@ -74,6 +76,15 @@ private:
 int main()
 {
     signal(SIGINT, signalHandler);
+
+    auto defaultSource = SettingSourceDefault();
+    std::vector<ISettingSource> extraSource;
+
+    auto handler = SettingHandler(defaultSource, extraSource);
+    for ( auto const& [key, val] : handler.Settings() ) {
+        std::cout << "[" << val.source->Alias() << "] " << val.name << " " << val.value<< " " << std::endl;
+    }
+
     auto connection = sdbus::createSessionBusConnection();
     connection->requestName(DBUS_SERVICE);
     connection->enterEventLoopAsync();
