@@ -1,5 +1,6 @@
 #pragma once
 
+#include <variant>
 #include <vector>
 #include <string>
 
@@ -7,7 +8,7 @@ class ISettingSource {
 public:
     struct Setting {
         std::string name;
-        int value;
+        std::variant<bool, int, std::string> value;
         ISettingSource *source;
     };
 

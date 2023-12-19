@@ -73,6 +73,19 @@ public:
 private:
 };
 
+std::string toString(const ISettingSource::Setting &setting) {
+    if (std::holds_alternative<std::string>(setting.value)) {
+        return std::get<std::string>(setting.value);
+    }
+    if (std::holds_alternative<int>(setting.value)) {
+        return std::to_string(std::get<int>(setting.value));
+    }
+    if (std::holds_alternative<bool>(setting.value)) {
+        return std::get<bool>(setting.value) ? "True" : "False";
+    }
+    return "N/A";
+}
+
 int main()
 {
     signal(SIGINT, signalHandler);
@@ -82,7 +95,7 @@ int main()
 
     auto handler = SettingHandler(defaultSource, extraSource);
     for ( auto const& [key, val] : handler.Settings() ) {
-        std::cout << "[" << val.source->Alias() << "] " << val.name << " " << val.value<< " " << std::endl;
+        std::cout << "[" << val.source->Alias() << "] " << val.name << " " << toString(val) << " " << std::endl;
     }
 
     auto connection = sdbus::createSessionBusConnection();
