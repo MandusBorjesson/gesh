@@ -3,6 +3,7 @@
 #include <variant>
 #include <vector>
 #include <string>
+#include "ISettingRule.h"
 
 class ISettingSource {
 public:
@@ -10,6 +11,7 @@ public:
         std::string name;
         std::variant<bool, int, std::string> value;
         ISettingSource *source;
+        ISettingRule *rule;
     };
 
     ISettingSource(std::string name) : m_alias(name) {};
