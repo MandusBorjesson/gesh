@@ -1,6 +1,6 @@
-#include "ISettingRule.h"
+#include "settingRule.h"
 
-bool SettingRuleBool::verify(std::variant<bool, int, std::string> value) {
+bool SettingRuleBool::Verify(setting_t value) {
     if (std::holds_alternative<bool>(value)) {
         return true;
     } else {
@@ -8,7 +8,7 @@ bool SettingRuleBool::verify(std::variant<bool, int, std::string> value) {
     }
 }
 
-bool SettingRuleRangedInt::verify(std::variant<bool, int, std::string> value) {
+bool SettingRuleRangedInt::Verify(setting_t value) {
     if (std::holds_alternative<int>(value)) {
         auto val = std::get<int>(value);
         return val >= m_min && val <= m_max;

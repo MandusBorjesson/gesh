@@ -4,21 +4,23 @@
 #include <string>
 #include <variant>
 
+using setting_t = std::variant<std::monostate, bool, int, std::string>;
+
 class ISettingRule {
 public:
-    virtual bool verify(std::variant<bool, int, std::string> value) = 0;
+    virtual bool Verify(setting_t value) = 0;
 };
 
 class SettingRuleBool: public ISettingRule {
 public:
     SettingRuleBool() = default;
-    bool verify(std::variant<bool, int, std::string> value);
+    bool Verify(setting_t value);
 };
 
 class SettingRuleRangedInt: public ISettingRule {
 public:
     SettingRuleRangedInt(int min, int max) : m_min(min), m_max(max) {};
-    bool verify(std::variant<bool, int, std::string> value);
+    bool Verify(setting_t value);
 
 protected:
     int m_max;
