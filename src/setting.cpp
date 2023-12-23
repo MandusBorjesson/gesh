@@ -1,4 +1,4 @@
-#include <iostream>
+#include "log.h"
 #include "setting.h"
 
 Setting::Setting(std::string name, setting_t value, ISettingInitializer *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
@@ -52,7 +52,7 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
         if (setting.Ok()) {
             m_settings[setting.Name()] = setting;
         } else {
-            std::cout << "Rule check failed for " << setting.Name() << std::endl;
+            WARNING << "Rule check failed for " << setting.Name() << std::endl;
         }
     }
 }

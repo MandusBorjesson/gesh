@@ -2,7 +2,7 @@
 #include "setting.h"
 #include "settingInitializerHardcoded.h"
 #include <sdbus-c++/sdbus-c++.h>
-#include <iostream>
+#include "log.h"
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -12,7 +12,7 @@ constexpr auto DBUS_SERVICE = "owl.gesh";
 constexpr auto DBUS_PATH = "/owl/gesh";
 
 void signalHandler( int signum ) {
-   std::cout << "Interrupt signal (" << signum << ") received.\n";
+   ERROR << "Interrupt signal (" << signum << ") received.\n";
 
    // cleanup and close up stuff here
    // terminate program
@@ -82,7 +82,7 @@ int main()
 
     auto handler = SettingHandler(init, extraSource);
     for ( auto const& [key, val] : handler.Settings() ) {
-        std::cout << val << std::endl;
+        DEBUG << val << std::endl;
     }
 
     auto connection = sdbus::createSessionBusConnection();
