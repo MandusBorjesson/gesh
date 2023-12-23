@@ -3,6 +3,7 @@
 #include "settingInitializerHardcoded.h"
 #include <sdbus-c++/sdbus-c++.h>
 #include "log.h"
+#include "version.h"
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -76,6 +77,10 @@ private:
 int main()
 {
     signal(SIGINT, signalHandler);
+
+    INFO << "Gesh - Good enough setting handler" << std::endl;
+    INFO << "Git SHA: " << BUILD_VERSION << std::endl;
+    INFO << "Build: " << BUILD_DATE << std::endl;
 
     auto init = SettingInitializerHardcoded();
     std::vector<ISettingInitializer> extraSource;
