@@ -1,6 +1,7 @@
 #include "dbus-abstraction.h"
 #include "setting.h"
 #include "settingInitializerHardcoded.h"
+#include "settingReaderFile.h"
 #include <sdbus-c++/sdbus-c++.h>
 #include "log.h"
 #include "version.h"
@@ -113,10 +114,11 @@ int main()
     INFO << "Build: " << BUILD_DATE << std::endl;
 
     auto init = SettingInitializerHardcoded();
-    std::vector<ISettingReader> extraReaders;
-    DEBUG << "Setting initialization DONE. " << t_keeper << std::endl;
+    std::vector<ISettingReader*> readers = {new SettingReaderCsv("/home/mandus/git/gesh/test.csv")};
 
-    auto handler = SettingHandler(init, extraReaders);
+    DEBUG << "Initializing settings... " << t_keeper << std::endl;
+    auto handler = SettingHandler(init, readers);
+    DEBUG << "Setting initialization DONE. " << t_keeper << std::endl;
     for ( auto const& [key, val] : handler.Settings() ) {
         DEBUG << val << std::endl;
     }

@@ -1,26 +1,31 @@
 #pragma once
 
+#include "settingTypes.h"
 #include <limits.h>
 #include <string>
 #include <variant>
 
-using setting_t = std::variant<std::monostate, bool, int, std::string>;
+
+class SettingRuleException : public SettingException {
+public:
+    SettingRuleException(std::string& msg) : SettingException(msg) {}
+};
 
 class ISettingRule {
 public:
-    virtual bool Verify(setting_t value) = 0;
+    virtual setting_t ToSetting(std::string value) { return value; };
 };
 
 class SettingRuleBool: public ISettingRule {
 public:
     SettingRuleBool() = default;
-    bool Verify(setting_t value);
+    setting_t ToSetting(std::string value) override;
 };
 
 class SettingRuleRangedInt: public ISettingRule {
 public:
     SettingRuleRangedInt(int min, int max) : m_min(min), m_max(max) {};
-    bool Verify(setting_t value);
+    setting_t ToSetting(std::string value) override;
 
 protected:
     int m_max;
