@@ -2,17 +2,18 @@
 
 #include <variant>
 #include <vector>
+#include <map>
 #include <string>
 #include "settingRule.h"
+#include "settingTypes.h"
 #include "setting.h"
-
-using setting_t = std::variant<std::monostate, bool, int, std::string>;
 
 class Setting;
 
 class ISettingSource {
 public:
     ISettingSource(std::string name) : m_alias(name) {};
+    virtual ~ISettingSource() = default;
     const std::string Alias() { return m_alias; };
 
 protected:
@@ -28,5 +29,5 @@ public:
 class ISettingReader : public ISettingSource {
 public:
     ISettingReader(std::string name) : ISettingSource(name) {};
-    virtual std::vector<std::pair<std::string, setting_t>> GetSettings() = 0;
+    virtual std::map<std::string, std::string> GetSettings() = 0;
 };

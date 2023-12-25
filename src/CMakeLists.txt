@@ -6,6 +6,7 @@ add_executable(${APP}
     setting.cpp
     settingInitializerHardcoded.cpp
     settingRule.cpp
+    settingReaderFile.cpp
     ${CMAKE_BINARY_DIR}/generated/dbus-abstraction.h
     )
 target_include_directories(${APP} PRIVATE ${CMAKE_BINARY_DIR}/generated)

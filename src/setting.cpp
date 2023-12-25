@@ -1,28 +1,38 @@
 #include "log.h"
 #include "setting.h"
 
-Setting::Setting(std::string name, setting_t value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
-    Set(value);
+Setting::Setting(std::string name, std::string value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
+    if (m_rule) {
+        try {
+            m_value = m_rule->ToSetting(value);
+            m_good = true;
+        } catch ( SettingException const& ex ) {
+            ERROR << "Failed to initialize: " << m_name << ": " << ex.what() << std::endl;
+        }
+    } else {
+        m_value = value;
+        m_good = true;
+    }
 }
 
-bool Setting::Set(setting_t value) {
-    if (!m_rule || m_rule->Verify(value)) {
+void Setting::Set(std::string value, ISettingSource *source) {
+
+    if (!m_rule) {
         m_value = value;
-        return true;
+        m_source = source;
+        return;
     }
 
-    return false;
+    try {
+        m_value = m_rule->ToSetting(value);
+        m_source = source;
+    } catch ( SettingException const& ex ) {
+        WARNING << "Failed to set: " << m_name << ": " << value << ". Error: " << ex.what() << std::endl;
+    }
 }
 
 std::string Setting::Source() const {
     return m_source->Alias();
-}
-
-bool Setting::Ok() {
-    if (!m_rule)
-        return true;
-
-    return m_rule->Verify(m_value);
 }
 
 std::ostream& operator<<(std::ostream& os, const Setting& s)
@@ -44,15 +54,30 @@ std::ostream& operator<<(std::ostream& os, const Setting& s)
 }
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<ISettingReader> &extraReaders) {
+                               std::vector<ISettingReader*> &readers) {
 
     auto settings = initializer.InitializeSettings();
+    bool settings_ok = true;
 
     for (auto setting : settings) {
         if (setting.Ok()) {
             m_settings[setting.Name()] = setting;
         } else {
-            WARNING << "Rule check failed for " << setting.Name() << std::endl;
+            settings_ok = false;
+        }
+    }
+    if (!settings_ok) {
+        CRITICAL << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!" << std::endl;
+    }
+
+    for (auto reader : readers) {
+        INFO << "[SettingHandler] Fetching settings from " << reader->Alias() << std::endl;
+        for (auto setting : reader->GetSettings()) {
+            if (m_settings.find(setting.first) == m_settings.end()) {
+                WARNING << "Unknown setting" << setting.first << std::endl;
+                continue;
+            }
+            m_settings[setting.first].Set(setting.second, reader);
         }
     }
 }
