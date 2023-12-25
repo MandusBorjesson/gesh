@@ -113,10 +113,10 @@ int main()
     INFO << "Build: " << BUILD_DATE << std::endl;
 
     auto init = SettingInitializerHardcoded();
-    std::vector<ISettingInitializer> extraSource;
+    std::vector<ISettingReader> extraReaders;
     DEBUG << "Setting initialization DONE. " << t_keeper << std::endl;
 
-    auto handler = SettingHandler(init, extraSource);
+    auto handler = SettingHandler(init, extraReaders);
     for ( auto const& [key, val] : handler.Settings() ) {
         DEBUG << val << std::endl;
     }

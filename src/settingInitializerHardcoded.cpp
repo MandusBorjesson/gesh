@@ -5,7 +5,7 @@ auto boolRule = SettingRuleBool();
 auto intRule = SettingRuleInt();
 auto intRuleRange = SettingRuleRangedInt(0, 10);
 
-std::vector<Setting> SettingInitializerHardcoded::GetSettings() {
+std::vector<Setting> SettingInitializerHardcoded::InitializeSettings() {
     return std::vector<Setting> {
         Setting("Anarchy/test1", 1, this, nullptr),
         Setting("Anarchy/test2", "string!", this, nullptr),
