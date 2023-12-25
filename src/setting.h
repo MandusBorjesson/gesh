@@ -1,6 +1,6 @@
 #pragma once
 
-#include "settingInitializer.h"
+#include "settingSource.h"
 #include "settingRule.h"
 #include <string>
 #include <map>
@@ -10,12 +10,14 @@
 using setting_t = std::variant<std::monostate, bool, int, std::string>;
 
 class ISettingRule;
+class ISettingSource;
 class ISettingInitializer;
+class ISettingReader;
 
 class Setting {
 public:
     Setting() = default;
-    Setting(std::string name, setting_t value, ISettingInitializer *source, ISettingRule *rule);
+    Setting(std::string name, setting_t value, ISettingSource *source, ISettingRule *rule);
     bool Set(setting_t value);
     setting_t Get() const { return m_value; };
     std::string Name() const { return m_name; };
@@ -26,14 +28,14 @@ public:
 private:
     std::string m_name;
     setting_t m_value;
-    ISettingInitializer *m_source;
+    ISettingSource *m_source;
     ISettingRule *m_rule;
 };
 
 class SettingHandler {
 public:
     SettingHandler(ISettingInitializer &initializer,
-                   std::vector<ISettingInitializer> &extraSources);
+                   std::vector<ISettingReader> &extraReaders);
 
     void UpdateSettings(const std::map<std::string, int> newSettings);
     const std::map<std::string, Setting> Settings() { return m_settings; };

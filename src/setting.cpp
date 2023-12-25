@@ -1,7 +1,7 @@
 #include "log.h"
 #include "setting.h"
 
-Setting::Setting(std::string name, setting_t value, ISettingInitializer *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
+Setting::Setting(std::string name, setting_t value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
     Set(value);
 }
 
@@ -44,9 +44,9 @@ std::ostream& operator<<(std::ostream& os, const Setting& s)
 }
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<ISettingInitializer> &extraSources) {
+                               std::vector<ISettingReader> &extraReaders) {
 
-    auto settings = initializer.GetSettings();
+    auto settings = initializer.InitializeSettings();
 
     for (auto setting : settings) {
         if (setting.Ok()) {
