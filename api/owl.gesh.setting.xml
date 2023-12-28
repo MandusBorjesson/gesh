@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<node name="">
+    <interface name="owl.gesh.setting">
+        <!--
+            SettingsUpdated:
+            @settings: Map of name and updated value for the
+              changed settings.
+
+            Emitted when one or more settings change value.
+        -->
+        <signal name="SettingsUpdated">
+            <arg type="a{sv}" name="settings" />
+        </signal>
+        <!--
+            UpdateRequiresReset:
+	    @name: Name of the service that requires a reset to handle the new
+	      settings. THe name itself is not acted upon, it is only used for
+              information.
+
+	    Indicate to the settings manager that a change in settings can not
+            be handled dynamically.
+        -->
+        <method name="UpdateRequiresReset">
+            <arg type="s" name="name" direction="in" />
+        </method>
+        <!--
+            Get:
+	    @names: List of setting names.
+	    @values: Values of the settings.
+
+	    Get a collection of settings. The returned values are guaranteed to
+            be in the same order as the provided settings names.
+        -->
+        <method name="Get">
+            <arg type="as" name="names" direction="in" />
+            <arg type="av" name="values" direction="out" />
+        </method>
+        <!--
+            GetAll:
+	    @settings: Setting names and values.
+
+	    Get all settings provided by the D-Bus object.
+        -->
+        <method name="GetAll">
+            <arg type="a{sv}" name="settings" direction="out" />
+        </method>
+        <!--
+            Set:
+	    @settings: Setting names and values.
+
+	    Set settings based on the provided settings names and values.
+        -->
+        <method name="Set">
+            <arg type="a{sv}" name="settings" direction="in" />
+        </method>
+    </interface>
+</node>
