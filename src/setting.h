@@ -17,6 +17,7 @@ class Setting {
 public:
     Setting() = default;
     Setting(std::string name, std::string value, ISettingSource *source, ISettingRule *rule);
+    setting_t Try(const std::string &value);
     void Set(std::string value, ISettingSource *source);
     setting_t Get() const { return m_value; };
     std::string Name() const { return m_name; };
@@ -38,7 +39,9 @@ public:
                    std::vector<ISettingReader*> &readers);
 
     void UpdateSettings(const std::map<std::string, int> newSettings);
-    const std::map<std::string, Setting> Settings() { return m_settings; };
+    std::vector<setting_t> Get(const std::vector<std::string> keys);
+    void Set(const std::map<std::string, std::string> settings);
+    std::map<std::string, Setting> GetAll() { return m_settings; };
 
 private:
     std::map<std::string, Setting> m_settings;
