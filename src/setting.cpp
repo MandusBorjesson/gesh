@@ -15,24 +15,32 @@ Setting::Setting(std::string name, std::string value, ISettingSource *source, IS
     }
 }
 
-void Setting::Set(std::string value, ISettingSource *source) {
+setting_t Setting::Try(const std::string &value) {
 
     if (!m_rule) {
-        m_value = value;
-        m_source = source;
-        return;
+        return value;
     }
+    return m_rule->ToSetting(value);
+}
 
+void Setting::Set(std::string value, ISettingSource *source) {
+
+    setting_t val;
     try {
-        m_value = m_rule->ToSetting(value);
-        m_source = source;
+        val = Try(value);
     } catch ( SettingException const& ex ) {
         WARNING << "Failed to set: " << m_name << ": " << value << ". Error: " << ex.what() << std::endl;
+        return;
     }
+    m_source = source;
 }
 
 std::string Setting::Source() const {
-    return m_source->Alias();
+    if (m_source) {
+        return m_source->Alias();
+    } else {
+        return "None";
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const Setting& s)
@@ -52,6 +60,11 @@ std::ostream& operator<<(std::ostream& os, const Setting& s)
 
     return os;
 }
+
+class SettingHandlerException : public SettingException {
+public:
+    SettingHandlerException(std::string& msg) : SettingException(msg) {}
+};
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
                                std::vector<ISettingReader*> &readers) {
@@ -79,6 +92,35 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
             }
             m_settings[setting.first].Set(setting.second, reader);
         }
+    }
+}
+
+std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> keys) {
+    std::vector<setting_t> out;
+    for (auto key: keys) {
+        if (m_settings.find(key) == m_settings.end()) {
+            auto err = "Unknown key '" + key + "'";
+            throw SettingHandlerException(err);
+        }
+        out.push_back(m_settings[key].Get());
+    }
+    return out;
+}
+
+void SettingHandler::Set(const std::map<std::string, std::string> settings) {
+    for ( auto const& [key, val] : settings ) {
+        if (m_settings.find(key) == m_settings.end()) {
+            auto err = "Unknown key '" + key + "'";
+            throw SettingHandlerException(err);
+        }
+        m_settings[key].Try(val);
+    }
+    for ( auto const& [key, val] : settings ) {
+        m_settings[key].Set(val, nullptr);
+    }
+    INFO << "Settings changed" << std::endl;
+    for ( auto const& [key, val] : settings ) {
+        DEBUG << m_settings[key] << std::endl;
     }
 }
 
