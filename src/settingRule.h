@@ -13,19 +13,19 @@ public:
 
 class ISettingRule {
 public:
-    virtual setting_t ToSetting(std::string value) { return value; };
+    virtual setting_t ToSetting(const std::string &value) { return value; };
 };
 
 class SettingRuleBool: public ISettingRule {
 public:
     SettingRuleBool() = default;
-    setting_t ToSetting(std::string value) override;
+    setting_t ToSetting(const std::string &value) override;
 };
 
 class SettingRuleRangedInt: public ISettingRule {
 public:
     SettingRuleRangedInt(int min, int max) : m_min(min), m_max(max) {};
-    setting_t ToSetting(std::string value) override;
+    setting_t ToSetting(const std::string &value) override;
 
 protected:
     int m_max;

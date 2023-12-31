@@ -12,7 +12,7 @@ class Setting;
 
 class ISettingSource {
 public:
-    ISettingSource(std::string name) : m_alias(name) {};
+    ISettingSource(const std::string &name) : m_alias(name) {};
     virtual ~ISettingSource() = default;
     const std::string Alias() { return m_alias; };
 
@@ -22,12 +22,12 @@ protected:
 
 class ISettingInitializer : public ISettingSource {
 public:
-    ISettingInitializer(std::string name) : ISettingSource(name) {};
+    ISettingInitializer(const std::string &name) : ISettingSource(name) {};
     virtual std::vector<Setting> InitializeSettings() = 0;
 };
 
 class ISettingReader : public ISettingSource {
 public:
-    ISettingReader(std::string name) : ISettingSource(name) {};
+    ISettingReader(const std::string &name) : ISettingSource(name) {};
     virtual std::map<std::string, std::string> GetSettings() = 0;
 };

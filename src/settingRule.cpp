@@ -1,23 +1,24 @@
 #include "settingRule.h"
 #include "log.h"
 
-setting_t SettingRuleBool::ToSetting(std::string value) {
+setting_t SettingRuleBool::ToSetting(const std::string &value) {
+    std::string value_tmp = value;
     // Make the value lowercase to ease comparison
-    for (int i = 0; i < value.length(); i++) {
-        value[i] = static_cast<char>(std::tolower(value[i]));
+    for (int i = 0; i < value_tmp.length(); i++) {
+        value_tmp[i] = static_cast<char>(std::tolower(value_tmp[i]));
     }
 
-    if (value.compare("false") == 0 || value.compare("0") == 0) {
+    if (value_tmp.compare("false") == 0 || value_tmp.compare("0") == 0) {
         return false;
     }
-    if (value.compare("true") == 0 || value.compare("1") == 0) {
+    if (value_tmp.compare("true") == 0 || value_tmp.compare("1") == 0) {
         return true;
     }
-    std::string err = "Cannot convert \"" + value + "\" to boolean.";
+    std::string err = "Cannot convert \"" + value_tmp + "\" to boolean.";
     throw SettingRuleException(err);
 }
 
-setting_t SettingRuleRangedInt::ToSetting(std::string value) {
+setting_t SettingRuleRangedInt::ToSetting(const std::string &value) {
     int val;
     std::stringstream logstream;
 
