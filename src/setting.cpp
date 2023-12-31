@@ -1,7 +1,7 @@
 #include "log.h"
 #include "setting.h"
 
-Setting::Setting(std::string name, std::string value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
+Setting::Setting(const std::string &name, const std::string &value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
     if (m_rule) {
         try {
             m_value = m_rule->ToSetting(value);
@@ -23,7 +23,7 @@ setting_t Setting::Try(const std::string &value) {
     return m_rule->ToSetting(value);
 }
 
-void Setting::Set(std::string value, ISettingSource *source) {
+void Setting::Set(const std::string &value, ISettingSource *source) {
 
     setting_t val;
     try {
@@ -95,7 +95,7 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     }
 }
 
-std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> keys) {
+std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> &keys) {
     std::vector<setting_t> out;
     for (auto key: keys) {
         if (m_settings.find(key) == m_settings.end()) {
@@ -107,7 +107,7 @@ std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> keys) 
     return out;
 }
 
-void SettingHandler::Set(const std::map<std::string, std::string> settings) {
+void SettingHandler::Set(const std::map<std::string, std::string> &settings) {
     for ( auto const& [key, val] : settings ) {
         if (m_settings.find(key) == m_settings.end()) {
             auto err = "Unknown key '" + key + "'";
@@ -122,8 +122,4 @@ void SettingHandler::Set(const std::map<std::string, std::string> settings) {
     for ( auto const& [key, val] : settings ) {
         DEBUG << m_settings[key] << std::endl;
     }
-}
-
-void SettingHandler::UpdateSettings(const std::map<std::string, int> newSettings) {
-    return;
 }
