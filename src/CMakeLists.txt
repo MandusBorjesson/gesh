@@ -1,14 +1,15 @@
-
-set(APP gesh)
+add_subdirectory(common)
+add_subdirectory(dbus)
+add_subdirectory(setting)
 
 add_executable(${APP}
     main.cpp
-    setting.cpp
-    settingInitializerHardcoded.cpp
-    settingRule.cpp
-    settingReaderFile.cpp
-    ${CMAKE_BINARY_DIR}/generated/dbus-abstraction.h
     )
-target_include_directories(${APP} PRIVATE ${CMAKE_BINARY_DIR}/generated)
-target_link_libraries(${APP} sdbus-c++)
 
+target_include_directories(${APP} PRIVATE ${CMAKE_BINARY_DIR}/generated)
+
+target_link_libraries(${APP} PRIVATE
+    gesh_dbus
+    gesh_common
+    gesh_setting
+)
