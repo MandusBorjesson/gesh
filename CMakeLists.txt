@@ -2,9 +2,11 @@
 # PROJECT INFORMATION
 #-------------------------------
 
+set(APP gesh)
+
 cmake_minimum_required(VERSION 3.13)
 
-project(sdbus-c++ VERSION 1.3.0 LANGUAGES C CXX)
+project(${APP} VERSION 0.0.1 LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
 
