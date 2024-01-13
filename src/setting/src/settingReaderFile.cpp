@@ -5,6 +5,11 @@
 #include <map>
 #include <sstream>
 
+
+SettingReaderCsv::SettingReaderCsv(const std::string &path) : ISettingReader(path), m_path(path) {
+    INFO << "[SettingReaderCsv] Created for path " << path << std::endl;
+};
+
 std::map<std::string, std::string> SettingReaderCsv::GetSettings() {
     std::map<std::string, std::string> out;
 
