@@ -4,7 +4,7 @@
 
 class SettingReaderCsv : public ISettingReader {
 public:
-    SettingReaderCsv(const std::string &path) : ISettingReader(path), m_path(path) {};
+    SettingReaderCsv(const std::string &path);
     std::map<std::string, std::string> GetSettings() override;
 
 private:
