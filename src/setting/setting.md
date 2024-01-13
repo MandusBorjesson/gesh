@@ -68,6 +68,13 @@ order they are provided, effectively making later reader _higher priority_.
 When read, settings are validated towards the rules set up by the [Setting
 initializer](#initializers). If validation fails, the setting is ignored.
 
+## Reader factory
+The reader factory will find any setting fragments on the paths provided to it
+and return a vector of readers for the files.
+
+**Future improvements**
+* Sort the fragments somehow
+ - Add priority to file name?
 
 # Rule handling
 
