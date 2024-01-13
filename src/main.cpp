@@ -1,7 +1,7 @@
 #include "dbus.h"
 #include "setting.h"
 #include "settingInitializerHardcoded.h"
-#include "settingReaderFile.h"
+#include "settingReaderFactory.h"
 #include <sdbus-c++/sdbus-c++.h>
 #include "log.h"
 #include "version.h"
@@ -61,7 +61,8 @@ int main()
     INFO << "Build: " << BUILD_DATE << std::endl;
 
     auto init = SettingInitializerHardcoded();
-    std::vector<ISettingReader*> readers = {new SettingReaderCsv("/home/mandus/git/gesh/test.csv")};
+    auto srf = SettingReaderFactory({"/home/mandus/git/gesh"});
+    std::vector<ISettingReader*> readers = srf.getReaders();
 
     DEBUG << "Initializing settings... " << t_keeper << std::endl;
     auto handler = SettingHandler(init, readers);
