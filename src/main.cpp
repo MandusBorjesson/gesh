@@ -50,7 +50,19 @@ protected:
     std::chrono::time_point<std::chrono::steady_clock> m_last;
 };
 
-int main()
+void print_help() {
+    INFO << std::endl;
+    INFO << "Usage:" << std::endl;
+    INFO << " gesh [options]" << std::endl;
+    INFO << std::endl;
+    INFO << "Options:" << std::endl;
+    INFO << " -d, --directory <dir>    search directory for fragments" << std::endl;
+    INFO << std::endl;
+    INFO << " -h, --help               display this help" << std::endl;
+    INFO << " -v, --version            display version" << std::endl;
+}
+
+int main(int argc, char *argv[])
 {
     auto t_keeper = TimeKeeper();
 
@@ -60,8 +72,34 @@ int main()
     INFO << "Git SHA: " << BUILD_VERSION << std::endl;
     INFO << "Build: " << BUILD_DATE << std::endl;
 
+    std::vector<std::string> searchPaths;
+
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-h" || arg == "--help") {
+            print_help();
+            return 0;
+        } else if (arg == "-v" || arg == "--version") {
+            return 0;
+        } else if (arg == "-d" || arg == "--directory") {
+            // Try to grab the next argument, a directory
+            if (i+1 < argc) {
+                searchPaths.push_back(std::string(argv[i+1]));
+                i++;
+            } else {
+                ERROR << "Missing argument after " << arg << std::endl;
+                print_help();
+                return 1;
+            }
+        } else {
+            ERROR << "Unknown argument: " << arg << std::endl;
+            print_help();
+            return 1;
+        }
+    }
+
     auto init = SettingInitializerHardcoded();
-    auto srf = SettingReaderFactory({"/home/mandus/git/gesh"});
+    auto srf = SettingReaderFactory(searchPaths);
     std::vector<ISettingReader*> readers = srf.getReaders();
 
     DEBUG << "Initializing settings... " << t_keeper << std::endl;
