@@ -72,9 +72,5 @@ initializer](#initializers). If validation fails, the setting is ignored.
 The reader factory will find any setting fragments on the paths provided to it
 and return a vector of readers for the files.
 
-**Future improvements**
-* Sort the fragments somehow
- - Add priority to file name?
-
 # Rule handling
 
