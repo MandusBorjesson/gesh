@@ -5,10 +5,8 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include "log.h"
 #include "version.h"
-#include <memory>
 #include <thread>
 #include <csignal>
-#include <iomanip>
 
 constexpr auto DBUS_SERVICE = "owl.gesh";
 constexpr auto DBUS_PATH = "/owl/gesh";
