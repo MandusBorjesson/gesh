@@ -1,7 +1,30 @@
 #include "settingRule.h"
 #include "log.h"
 
-setting_t SettingRuleBool::ToSetting(const std::string &value) {
+std::string toType(const setting_t &value) {
+    if (std::holds_alternative<std::string>(value)) {
+        return "string";
+    } else if (std::holds_alternative<int>(value)) {
+        return "integer";
+    } else if (std::holds_alternative<bool>(value)) {
+        return "boolean";
+    } else {
+        return "unknown";
+    }
+}
+
+setting_t SettingRuleString::_fromStr(const std::string &value) {
+    return value;
+}
+
+void SettingRuleString::_validate(const setting_t &setting) {
+    if (!std::holds_alternative<std::string>(setting)) {
+        std::string err = "Invalid setting type " + toType(setting) + ", expected string";
+        throw SettingRuleException(err);
+    }
+}
+
+setting_t SettingRuleBool::_fromStr(const std::string &value) {
     std::string value_tmp = value;
     // Make the value lowercase to ease comparison
     for (int i = 0; i < value_tmp.length(); i++) {
@@ -15,27 +38,40 @@ setting_t SettingRuleBool::ToSetting(const std::string &value) {
         return true;
     }
     std::string err = "Cannot convert \"" + value_tmp + "\" to boolean.";
-    throw SettingRuleException(err);
+    throw SettingRuleConversionException(err);
 }
 
-setting_t SettingRuleRangedInt::ToSetting(const std::string &value) {
-    int val;
+void SettingRuleBool::_validate(const setting_t &setting) {
+    if (!std::holds_alternative<bool>(setting)) {
+        std::string err = "Invalid setting type " + toType(setting) + ", expected boolean";
+        throw SettingRuleException(err);
+    }
+}
+
+setting_t SettingRuleRangedInt::_fromStr(const std::string &value) {
     std::stringstream logstream;
 
     try {
         std::size_t pos{};
-        val = std::stoi(value, &pos);
+        return std::stoi(value, &pos);
     } catch (std::invalid_argument const& ex) {
         std::string err = "Cannot convert \"" + value + "\" to integer (Invalid).";
-        throw SettingRuleException(err);
+        throw SettingRuleConversionException(err);
     } catch (std::out_of_range const& ex) {
         std::string err = "Cannot convert \"" + value + "\" to integer (Out of range).";
+        throw SettingRuleConversionException(err);
+    }
+}
+
+void SettingRuleRangedInt::_validate(const setting_t &setting) {
+    if (!std::holds_alternative<int>(setting)) {
+        std::string err = "Invalid setting type " + toType(setting) + ", expected integer";
         throw SettingRuleException(err);
     }
 
-    if (val >= m_min && val <= m_max) {
-        return val;
-    } else {
+    int val = std::get<int>(setting);
+
+    if (!(val >= m_min && val <= m_max)) {
         std::string err = "Value " + std::to_string(val) + " not in range [" + std::to_string(m_min) + ", " + std::to_string(m_max) + "].";
         throw SettingRuleException(err);
     }

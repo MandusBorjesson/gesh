@@ -17,11 +17,12 @@ class Setting {
 public:
     Setting() = default;
     Setting(const std::string &name, const std::string &value, ISettingSource *source, ISettingRule *rule);
-    setting_t Try(const std::string &value);
-    void Set(const std::string &value, ISettingSource *source);
+    void Try(const setting_t &value);
+    bool Set(const setting_t &value, ISettingSource *source);
     setting_t Get() const { return m_value; };
     std::string Name() const { return m_name; };
     std::string Source() const;
+    ISettingRule* Rule() const {return m_rule;};
     bool Ok() const { return m_good; };
 
     friend std::ostream& operator<<(std::ostream& os, const Setting& s);
@@ -39,7 +40,7 @@ public:
                    std::vector<ISettingReader*> &readers);
 
     std::vector<setting_t> Get(const std::vector<std::string> &keys);
-    void Set(const std::map<std::string, std::string> &settings);
+    std::map<std::string, setting_t> Set(const std::map<std::string, setting_t> &settings);
     std::map<std::string, Setting> GetAll() const { return m_settings; };
 
 private:

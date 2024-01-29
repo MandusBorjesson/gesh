@@ -2,37 +2,35 @@
 #include "setting.h"
 
 Setting::Setting(const std::string &name, const std::string &value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
-    if (m_rule) {
-        try {
-            m_value = m_rule->ToSetting(value);
-            m_good = true;
-        } catch ( SettingException const& ex ) {
-            ERROR << "Failed to initialize: " << m_name << ": " << ex.what() << std::endl;
-        }
-    } else {
-        m_value = value;
-        m_good = true;
-    }
-}
-
-setting_t Setting::Try(const std::string &value) {
-
     if (!m_rule) {
-        return value;
+        std::string err = "No rule provided for " + name;
+        throw SettingException(err);
     }
-    return m_rule->ToSetting(value);
+
+    try {
+        m_value = m_rule->ToSetting(value);
+        m_good = true;
+    } catch ( SettingException const& ex ) {
+        ERROR << "Failed to initialize: " << m_name << ": " << ex.what() << std::endl;
+    }
 }
 
-void Setting::Set(const std::string &value, ISettingSource *source) {
+bool Setting::Set(const setting_t &value, ISettingSource *source) {
 
-    setting_t val;
     try {
-        val = Try(value);
+        m_rule->Validate(value);
     } catch ( SettingException const& ex ) {
-        WARNING << "Failed to set: " << m_name << ": " << value << ". Error: " << ex.what() << std::endl;
-        return;
+        WARNING << "Failed to set: " << m_name << ". Error: " << ex.what() << std::endl;
+        return false;
     }
+
     m_source = source;
+
+    if (m_value == value) {
+        return false;
+    }
+    m_value = value;
+    return true;
 }
 
 std::string Setting::Source() const {
@@ -90,7 +88,8 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
                 WARNING << "Unknown setting" << setting.first << std::endl;
                 continue;
             }
-            m_settings[setting.first].Set(setting.second, reader);
+            auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
+            m_settings[setting.first].Set(val, reader);
         }
     }
 }
@@ -107,19 +106,31 @@ std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> &keys)
     return out;
 }
 
-void SettingHandler::Set(const std::map<std::string, std::string> &settings) {
+std::map<std::string, setting_t> SettingHandler::Set(const std::map<std::string, setting_t> &settings) {
     for ( auto const& [key, val] : settings ) {
         if (m_settings.find(key) == m_settings.end()) {
             auto err = "Unknown key '" + key + "'";
             throw SettingHandlerException(err);
         }
-        m_settings[key].Try(val);
+        try {
+            m_settings[key].Rule()->Validate(val);
+        } catch ( SettingRuleException const& ex ) {
+            std::string err = key + ": " + ex.what();
+            throw SettingHandlerException(err);
+        }
     }
+    std::map<std::string, setting_t> updated;
     for ( auto const& [key, val] : settings ) {
-        m_settings[key].Set(val, nullptr);
+        if(m_settings[key].Set(val, nullptr)) {
+            updated[key] = val;
+        }
     }
-    INFO << "Settings changed" << std::endl;
-    for ( auto const& [key, val] : settings ) {
-        DEBUG << m_settings[key] << std::endl;
+
+    if (!updated.empty()) {
+        INFO << "Settings changed" << std::endl;
+        for ( auto const& [key, val] : updated ) {
+            DEBUG << m_settings[key] << std::endl;
+        }
     }
+    return updated;
 }
