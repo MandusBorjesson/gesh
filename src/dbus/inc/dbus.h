@@ -45,7 +45,7 @@ public:
     void Set(const std::map<std::string, sdbus::Variant>& settings);
 
 private:
-    sdbus::Variant ToSdBusVariant(const setting_t &val);
-    std::string ToString(const sdbus::Variant &val);
+    sdbus::Variant ToSdBusVariant(const setting_t &val) const;
+    setting_t ToSetting(const sdbus::Variant &val) const;
     SettingHandler *m_handler;
 };

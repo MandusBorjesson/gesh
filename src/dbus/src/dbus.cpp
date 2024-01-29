@@ -27,21 +27,32 @@ std::map<std::string, sdbus::Variant> DbusAdaptor::GetAll() {
 
 void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& settings) {
     DEBUG << "Set called" << std::endl;
-    std::map<std::string, std::string> in;
+
+    std::map<std::string, setting_t> in;
     for (auto const& [key, val] : settings) {
-        in[key] = std::string(ToString(val));
+        in[key] = ToSetting(val);
     }
+
+    std::map<std::string, setting_t> updated;
     try {
-        m_handler->Set(in);
+        updated = m_handler->Set(in);
     } catch ( SettingException const & ex ) {
         std::string err = ex.what();
         ERROR << "Failed to set setting(s): " + err << std::endl;;
         throw sdbus::Error("own.gesh.Error", "Failed to set setting(s): " + err);
     }
-    emitSettingsUpdated(settings);
+
+    std::map<std::string, sdbus::Variant> out;
+    for (auto const& [key, val] : updated) {
+        out[key] = ToSdBusVariant(val);
+    }
+
+    if (!out.empty()) {
+        emitSettingsUpdated(out);
+    }
 }
 
-sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) {
+sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) const {
     if (std::holds_alternative<std::string>(val)) {
         return sdbus::Variant(std::get<std::string>(val));
     } else if (std::holds_alternative<int>(val)) {
@@ -52,14 +63,14 @@ sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) {
         return sdbus::Variant(NULL);
     }
 }
-std::string DbusAdaptor::ToString(const sdbus::Variant &val) {
+setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
     auto type = val.peekValueType();
     if (type == "s") {
         return std::string(val);
     } else if (type == "i") {
-        return std::to_string(int(val));
+        return int(val);
     } else if (type == "b") {
-        return (bool(val) == true) ? "1" : "0";
+        return bool(val);
     } else {
         auto err = "Unknown variant type '" + type + "'";
         ERROR << err << std::endl;

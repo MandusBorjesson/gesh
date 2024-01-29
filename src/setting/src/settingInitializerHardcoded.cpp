@@ -1,15 +1,16 @@
 #include "settingInitializerHardcoded.h"
 #include "settingRule.h"
 
+auto stringRule = SettingRuleString();
 auto boolRule = SettingRuleBool();
 auto intRule = SettingRuleInt();
 auto intRuleRange = SettingRuleRangedInt(0, 10);
 
 std::vector<Setting> SettingInitializerHardcoded::InitializeSettings() {
     return std::vector<Setting> {
-        Setting("Anarchy/test1", "1", this, nullptr),
-        Setting("Anarchy/test2", "string!", this, nullptr),
-        Setting("Anarchy/test3", "true", this, nullptr),
+        Setting("Anarchy/test1", "1", this, &stringRule),
+        Setting("Anarchy/test2", "string!", this, &stringRule),
+        Setting("Anarchy/test3", "true", this, &stringRule),
         Setting("Integer/test1", "1", this, &intRule),
         Setting("Integer/test2", "123", this, &intRule),
         Setting("Integer/ranged/test1", "-4000", this, &intRuleRange),

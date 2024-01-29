@@ -4,14 +4,6 @@
 The `SettingHandler` class is the main point of interaction for settings. It
 handles setting access, updating, rule verification and much more.
 
-**Future improvements**
-* Let the 'Set' function return a list of updated keys/values so that the D-Bus
-  handler only needs to return values that changed.
-* Let 'Set' accept `setting_t` instead of `std::string`
-  - There really isn't any need to go through the `std::string` conversion. The
-    only hinderance at the moment it that the `ISettingRule` class only
-    validates strings...
-
 ## Writing changed settings to persistent storage
 > [!WARNING]
 > How writing is to be handled is still not decided, a few possible solutions
@@ -73,4 +65,6 @@ The reader factory will find any setting fragments on the paths provided to it
 and return a vector of readers for the files.
 
 # Rule handling
-
+All settings are required to have a rule. I a setting does not need to follow
+any specific constraints, make it use a SettingRuleString since that is the
+most lenient rule.
