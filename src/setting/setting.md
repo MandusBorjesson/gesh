@@ -1,5 +1,41 @@
 # Settings
 
+The `SettingHandler` is the central point for interacting with settings, the
+diagram below details the relations between the `SettingHandler` and any other
+setting-related classes.
+
+```mermaid
+---
+title: SettingHandler class relations
+---
+classDiagram
+    class SettingHandler
+    SettingHandler : -List~string|Setting~ m_settings
+    SettingHandler : +Set(Map~string|setting_t~) Map~string|setting_t~
+    SettingHandler : +GetAll() Map~string|Setting~
+    SettingHandler : +Get(List~string~) List~setting_t~
+
+    class Setting
+    Setting : -setting_t m_value
+    Setting : -ISettingSource *m_source
+    Setting : -ISettingRule *m_rule
+    Setting : +Try(setting_t value) void
+    Setting : +Set(setting_t value, ISettingSource *source) bool
+    Setting : +Get() setting_t
+    note for Setting "setting_t: Variant(string, int, bool)"
+
+    class ISettingSource
+    ISettingSource : +Alias() string
+
+    class ISettingRule
+    ISettingRule : +ToSetting(string value) setting_t
+    ISettingRule : +Validate(const setting_t &value) void
+
+    SettingHandler --> "multiple" Setting : Contains
+    Setting --> ISettingRule : Holds reference to
+    Setting --> ISettingSource : Holds reference to
+```
+
 # SettingHandler
 The `SettingHandler` class is the main point of interaction for settings. It
 handles setting access, updating, rule verification and much more.
