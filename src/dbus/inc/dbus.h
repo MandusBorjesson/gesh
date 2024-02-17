@@ -1,6 +1,10 @@
 #include "dbus-abstraction.h"
 #include "setting.h"
+#include "log.h"
+#include "settingInterface.h"
 #include <sdbus-c++/sdbus-c++.h>
+
+constexpr auto DBUS_PATH = "/";
 
 class ManagerAdaptor : public sdbus::AdaptorInterfaces< sdbus::ObjectManager_adaptor >
 {
@@ -19,12 +23,14 @@ public:
 
 class DbusAdaptor final : public sdbus::AdaptorInterfaces< owl::gesh::setting_adaptor,
                                                 sdbus::ManagedObject_adaptor,
-                                                sdbus::Properties_adaptor >
+                                                sdbus::Properties_adaptor >,
+                          public ISettingApiManager
 {
 public:
-    DbusAdaptor(sdbus::IConnection& connection, std::string path, SettingHandler *handler)
-    : AdaptorInterfaces(connection, std::move(path)), m_handler(handler)
+    DbusAdaptor(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface)
+    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface)
     {
+        INFO << "Setting handler object created at: " << DBUS_PATH + iface->Name() << std::endl;
         registerAdaptor();
         emitInterfacesAddedSignal({owl::gesh::setting_adaptor::INTERFACE_NAME});
     }
@@ -39,8 +45,11 @@ public:
     std::map<std::string, sdbus::Variant> GetAll() override;
     void Set(const std::map<std::string, sdbus::Variant>& settings);
 
+    void handleSettingsUpdated(const std::map<std::string, setting_t>& settings);
+
 private:
     sdbus::Variant ToSdBusVariant(const setting_t &val) const;
     setting_t ToSetting(const sdbus::Variant &val) const;
     SettingHandler *m_handler;
+    SettingInterface *m_iface;
 };

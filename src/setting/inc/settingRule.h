@@ -8,12 +8,17 @@
 
 class SettingRuleException : public SettingException {
 public:
-    SettingRuleException(std::string& msg) : SettingException(msg) {}
+    SettingRuleException(const std::string& msg, const std::string child = "") : SettingException(msg, ".rule" + child) {}
 };
 
 class SettingRuleConversionException : public SettingRuleException {
 public:
-    SettingRuleConversionException(std::string& msg) : SettingRuleException(msg) {}
+    SettingRuleConversionException(const std::string& msg) : SettingRuleException(msg, ".conversion") {}
+};
+
+class SettingRuleMissingException : public SettingRuleException {
+public:
+    SettingRuleMissingException(const std::string& msg) : SettingRuleException(msg, ".missing") {}
 };
 
 class ISettingRule {

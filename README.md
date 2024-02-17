@@ -22,15 +22,19 @@ sequenceDiagram
         participant SettingHandler
     end
     User->>DBus: Read Setting(s)
-    DBus->>+DBusAdaptor: owl.gesh.setting.Get(...)
-    DBusAdaptor->>SettingHandler: Settings
-    loop For each setting
-        break Setting does not exist
-            SettingHandler-->>DBusAdaptor: Error response
+    DBus->>+DBusAdaptor: owl.gesh.setting.Get(keys)
+    loop For each key
+        DBusAdaptor->>SettingHandler: Get(key)
+        opt Setting does not exist
+            SettingHandler-->>DBusAdaptor: Add to errors
         end
+        opt No read access
+            SettingHandler-->>DBusAdaptor: Add to errors
+        end
+        SettingHandler-->>DBusAdaptor: Add to settings
     end
-    SettingHandler-->>DBusAdaptor: Ok response (Settings)
-    DBusAdaptor-->>-DBus: Response
+
+    DBusAdaptor-->>-DBus: Response(settings, errors)
     DBus-->>User: Response
 ```
 
@@ -44,28 +48,34 @@ sequenceDiagram
     actor User
     participant DBus
     box Gesh
-        participant DBusAdaptor
+        participant DBusAdaptor1
+        participant DBusAdaptor2
         participant SettingHandler
         participant ISettingRule
     end
     User->>DBus: Update Setting(s)
-    DBus->>+DBusAdaptor: owl.gesh.setting.Set(...)
-    DBusAdaptor->>SettingHandler: Settings
+    DBus->>+DBusAdaptor2: owl.gesh.setting.Set(...)
+    DBusAdaptor2->>SettingHandler: Set
     loop For each setting
         break Setting does not exist
-            SettingHandler-->>DBusAdaptor: Error response
+            SettingHandler-->>DBusAdaptor2: Error response
         end
         SettingHandler->>ISettingRule: Validate rule
         break Rule validation failed
-            ISettingRule-->>DBusAdaptor: Error response
+            ISettingRule-->>DBusAdaptor2: Error response
         end
     end
     SettingHandler-->>SettingHandler: Update settings
-    SettingHandler-->>DBusAdaptor: Ok response
-    DBusAdaptor-->>-DBus: Response
+
+    SettingHandler->>DBusAdaptor1: Updated ∩ Readable(DBusAdaptor1)
+    DBusAdaptor1->>DBus: Emit SettingsUpdated
+
+    SettingHandler->>DBusAdaptor2: Updated ∩ Readable(DBusAdaptor2)
+    DBusAdaptor2->>DBus: Emit SettingsUpdated
+
+    SettingHandler-->>DBusAdaptor2: Ok response
+    DBusAdaptor2-->>-DBus: Response
     DBus-->>User: Response
-    SettingHandler->>DBusAdaptor: Changed settings
-    DBusAdaptor->>DBus: Emit SettingsUpdated with changed settings
 ```
 
 # D-Bus handling

@@ -9,7 +9,6 @@
 #include <csignal>
 
 constexpr auto DBUS_SERVICE = "owl.gesh";
-constexpr auto DBUS_PATH = "/owl/gesh";
 
 void signalHandler( int signum ) {
    ERROR << "Interrupt signal (" << signum << ") received.\n";
@@ -73,7 +72,7 @@ int main(int argc, char *argv[])
     DEBUG << "Initializing settings... " << std::endl;
     auto handler = SettingHandler(init, readers);
     DEBUG << "Setting initialization DONE. " << std::endl;
-    for ( auto const& [key, val] : handler.GetAll() ) {
+    for ( auto const& [key, val] : handler.GetAll(nullptr) ) {
         DEBUG << val << std::endl;
     }
 
@@ -83,7 +82,13 @@ int main(int argc, char *argv[])
     DEBUG << "D-Bus service name aquired. " << std::endl;
 
     auto manager = std::make_unique<ManagerAdaptor>(*connection, DBUS_PATH);
-    auto settingManager = std::make_unique<DbusAdaptor>(*connection, DBUS_PATH, &handler);
+    std::vector<std::shared_ptr<DbusAdaptor>> dbusManagers;
+
+    for ( auto & iface : init.Interfaces() ) {
+        auto manager = std::make_shared<DbusAdaptor>(*connection, &handler, iface);
+        iface->RegisterManager(manager);
+        dbusManagers.push_back(manager);
+    }
     DEBUG << "D-Bus objects registered. " << std::endl;
 
     while (true) {
