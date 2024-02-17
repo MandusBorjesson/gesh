@@ -1,17 +1,20 @@
 #include "log.h"
 #include "setting.h"
 
-Setting::Setting(const std::string &name, const std::string &value, ISettingSource *source, ISettingRule *rule) : m_name(name), m_source(source), m_rule(rule) {
+Setting::Setting(const std::string &name,
+                 const std::string &value,
+                 ISettingSource *source,
+                 ISettingRule *rule,
+                 std::vector<SettingInterface*> readers,
+                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers) {
     if (!m_rule) {
-        std::string err = "No rule provided for " + name;
-        throw SettingException(err);
+        throw SettingRuleMissingException(name);
     }
 
     try {
         m_value = m_rule->ToSetting(value);
         m_good = true;
     } catch ( SettingException const& ex ) {
-        ERROR << "Failed to initialize: " << m_name << ": " << ex.what() << std::endl;
     }
 }
 
@@ -20,7 +23,6 @@ bool Setting::Set(const setting_t &value, ISettingSource *source) {
     try {
         new_value = m_rule->ToSetting(value);
     } catch ( SettingException const& ex ) {
-        WARNING << "Failed to set: " << m_name << ". Error: " << ex.what() << std::endl;
         return false;
     }
 
@@ -33,12 +35,34 @@ bool Setting::Set(const setting_t &value, ISettingSource *source) {
     return true;
 }
 
+setting_t Setting::Get() const {
+    return m_value;
+}
+
 std::string Setting::Source() const {
     if (m_source) {
         return m_source->Alias();
     } else {
         return "None";
     }
+}
+
+bool Setting::canRead(SettingInterface *iface) {
+    for (auto interface : m_readers) {
+        if (iface == interface) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Setting::canWrite(SettingInterface *iface) {
+    for (auto interface : m_writers) {
+        if (iface == interface) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const Setting& s)
@@ -61,11 +85,21 @@ std::ostream& operator<<(std::ostream& os, const Setting& s)
 
 class SettingHandlerException : public SettingException {
 public:
-    SettingHandlerException(std::string& msg) : SettingException(msg) {}
+    SettingHandlerException(const std::string &msg) : SettingException(msg, ".handler") {}
+};
+
+class SettingKeyException : public SettingException {
+public:
+    SettingKeyException(const std::string &msg) : SettingException(msg, ".key") {}
+};
+
+class SettingAccessException : public SettingException {
+public:
+    SettingAccessException(const std::string &msg) : SettingException(msg, ".access") {}
 };
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<ISettingReader*> &readers) {
+                               std::vector<ISettingReader*> &readers): m_interfaces(initializer.Interfaces()) {
 
     auto settings = initializer.InitializeSettings();
     bool settings_ok = true;
@@ -99,29 +133,27 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     }
 }
 
-std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> &keys) {
+std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> &keys, SettingInterface *iface) {
     std::vector<setting_t> out;
     for (auto key: keys) {
         if (m_settings.find(key) == m_settings.end()) {
-            auto err = "Unknown key '" + key + "'";
-            throw SettingHandlerException(err);
+            throw SettingKeyException(key);
+        }
+        if (!m_settings[key].canRead(iface)) {
+            throw SettingAccessException(key);
         }
         out.push_back(m_settings[key].Get());
     }
     return out;
 }
 
-std::map<std::string, setting_t> SettingHandler::Set(const std::map<std::string, setting_t> &settings) {
+void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface) {
     for ( auto const& [key, val] : settings ) {
         if (m_settings.find(key) == m_settings.end()) {
-            auto err = "Unknown key '" + key + "'";
-            throw SettingHandlerException(err);
+            throw SettingKeyException(key);
         }
-        try {
-            m_settings[key].Rule()->Validate(val);
-        } catch ( SettingRuleException const& ex ) {
-            std::string err = key + ": " + ex.what();
-            throw SettingHandlerException(err);
+        if (!m_settings[key].canWrite(iface)) {
+            throw SettingAccessException(key);
         }
 
         // Will throw if validation fails
@@ -134,11 +166,13 @@ std::map<std::string, setting_t> SettingHandler::Set(const std::map<std::string,
         }
     }
 
-    if (!updated.empty()) {
-        INFO << "Settings changed" << std::endl;
-        for ( auto const& [key, val] : updated ) {
-            DEBUG << m_settings[key] << std::endl;
+    for (const auto interface : m_interfaces) {
+        std::map<std::string, setting_t> temp;
+        for (const auto& [key, val] : updated) {
+            if(m_settings[key].canRead(interface)) {
+                temp[key] = val;
+            }
         }
+        interface->Manager()->handleSettingsUpdated(temp);
     }
-    return updated;
 }

@@ -5,6 +5,6 @@
 
 class SettingInitializerHardcoded : public ISettingInitializer {
 public:
-    SettingInitializerHardcoded() : ISettingInitializer("DEFAULT") {};
+    SettingInitializerHardcoded();
     std::vector<Setting> InitializeSettings() override;
 };

@@ -4,11 +4,9 @@
 std::vector<sdbus::Variant> DbusAdaptor::Get(const std::vector<std::string>& names) {
     std::vector<setting_t> settings;
     try {
-        settings = m_handler->Get(names);
+        settings = m_handler->Get(names, m_iface);
     } catch ( SettingException const & ex ) {
-        std::string err = ex.what();
-        ERROR << "Failed to get setting(s): " + err << std::endl;;
-        throw sdbus::Error("own.gesh.Error", "Failed to get setting(s): " + err);
+        throw sdbus::Error("own.gesh.Error", ex.what());
     }
     auto out = std::vector<sdbus::Variant>();
     for (auto setting: settings) {
@@ -19,7 +17,7 @@ std::vector<sdbus::Variant> DbusAdaptor::Get(const std::vector<std::string>& nam
 
 std::map<std::string, sdbus::Variant> DbusAdaptor::GetAll() {
     auto out = std::map<std::string, sdbus::Variant>();
-    for (auto setting: m_handler->GetAll()) {
+    for (auto setting: m_handler->GetAll(m_iface)) {
         out[setting.first] = ToSdBusVariant(setting.second.Get());
     }
     return out;
@@ -33,23 +31,12 @@ void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& settings) {
         in[key] = ToSetting(val);
     }
 
-    std::map<std::string, setting_t> updated;
     try {
-        updated = m_handler->Set(in);
+        m_handler->Set(in, m_iface);
     } catch ( SettingException const & ex ) {
-        std::string err = ex.what();
-        ERROR << "Failed to set setting(s): " + err << std::endl;;
-        throw sdbus::Error("own.gesh.Error", "Failed to set setting(s): " + err);
+        throw sdbus::Error("own.gesh.Error", ex.what());
     }
 
-    std::map<std::string, sdbus::Variant> out;
-    for (auto const& [key, val] : updated) {
-        out[key] = ToSdBusVariant(val);
-    }
-
-    if (!out.empty()) {
-        emitSettingsUpdated(out);
-    }
 }
 
 sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) const {
@@ -75,5 +62,16 @@ setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
         auto err = "Unknown variant type '" + type + "'";
         ERROR << err << std::endl;
         throw sdbus::Error("own.gesh.Error", err);
+    }
+}
+
+void DbusAdaptor::handleSettingsUpdated(const std::map<std::string, setting_t>& settings) {
+    std::map<std::string, sdbus::Variant> out;
+    for (auto const& [key, val] : settings) {
+        out[key] = ToSdBusVariant(val);
+    }
+
+    if (!out.empty()) {
+        emitSettingsUpdated(out);
     }
 }

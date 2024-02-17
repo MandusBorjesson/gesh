@@ -6,6 +6,7 @@
 #include <string>
 #include "settingRule.h"
 #include "settingTypes.h"
+#include "settingInterface.h"
 #include "setting.h"
 
 class Setting;
@@ -22,8 +23,11 @@ protected:
 
 class ISettingInitializer : public ISettingSource {
 public:
-    ISettingInitializer(const std::string &name) : ISettingSource(name) {};
+    ISettingInitializer(const std::string &name, std::vector<SettingInterface*> ifaces) : ISettingSource(name), m_interfaces(ifaces) {};
     virtual std::vector<Setting> InitializeSettings() = 0;
+    std::vector<SettingInterface*> Interfaces() { return m_interfaces; };
+protected:
+    std::vector<SettingInterface*> m_interfaces;
 };
 
 class ISettingReader : public ISettingSource {
