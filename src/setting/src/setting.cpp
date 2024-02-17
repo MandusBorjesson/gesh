@@ -84,12 +84,17 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     for (auto reader : readers) {
         INFO << "[SettingHandler] Fetching settings from " << reader->Alias() << std::endl;
         for (auto setting : reader->GetSettings()) {
+            DEBUG << "Setting: " << setting.first << std::endl;
             if (m_settings.find(setting.first) == m_settings.end()) {
-                WARNING << "Unknown setting" << setting.first << std::endl;
+                WARNING << "Unknown setting: " << setting.first << std::endl;
                 continue;
             }
-            auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
-            m_settings[setting.first].Set(val, reader);
+            try {
+                auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
+                m_settings[setting.first].Set(val, reader);
+            } catch ( SettingRuleException const& ex ) {
+                continue;
+            }
         }
     }
 }
