@@ -15,14 +15,15 @@
         <!--
             Get:
 	    @names: List of setting names.
-	    @values: Values of the settings.
+	    @values: Requested keys and values.
+	    @errors: Rejected keys and reject reason.
 
-	    Get a collection of settings. The returned values are guaranteed to
-            be in the same order as the provided settings names.
+	    Get a collection of settings.
         -->
         <method name="Get">
             <arg type="as" name="names" direction="in" />
-            <arg type="av" name="values" direction="out" />
+            <arg type="a{sv}" name="values" direction="out" />
+            <arg type="a{ss}" name="errors" direction="out" />
         </method>
         <!--
             GetAll:

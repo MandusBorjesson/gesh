@@ -6,6 +6,8 @@
 
 constexpr auto DBUS_PATH = "/";
 
+using dbusGet_t = std::tuple<std::map<std::string, sdbus::Variant>, std::map<std::string, std::string>>;
+
 class ManagerAdaptor : public sdbus::AdaptorInterfaces< sdbus::ObjectManager_adaptor >
 {
 public:
@@ -41,7 +43,7 @@ public:
         unregisterAdaptor();
     }
 
-    std::vector<sdbus::Variant> Get(const std::vector<std::string>& names) override;
+    dbusGet_t Get(const std::vector<std::string>& keys) override;
     std::map<std::string, sdbus::Variant> GetAll() override;
     void Set(const std::map<std::string, sdbus::Variant>& settings);
 

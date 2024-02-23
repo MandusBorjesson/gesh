@@ -48,7 +48,7 @@ public:
     SettingHandler(ISettingInitializer &initializer,
                    std::vector<ISettingReader*> &readers);
 
-    std::vector<setting_t> Get(const std::vector<std::string> &keys, SettingInterface *iface);
+    setting_t Get(const std::string &key, SettingInterface *iface);
     void Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface);
     std::map<std::string, Setting> GetAll(SettingInterface *iface) const { return m_settings; };
 
