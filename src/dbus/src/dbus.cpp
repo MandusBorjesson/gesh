@@ -1,18 +1,20 @@
 #include "dbus.h"
 #include "log.h"
 
-std::vector<sdbus::Variant> DbusAdaptor::Get(const std::vector<std::string>& names) {
-    std::vector<setting_t> settings;
-    try {
-        settings = m_handler->Get(names, m_iface);
-    } catch ( SettingException const & ex ) {
-        throw sdbus::Error("own.gesh.Error", ex.what());
+dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
+    INFO << "Get called" << std::endl;
+
+    dbusGet_t ret;
+    for (auto key: keys) {
+        try {
+            auto setting = m_handler->Get(key, m_iface);
+            std::get<0>(ret)[key] = sdbus::Variant(ToSdBusVariant(setting));
+        } catch ( SettingException const & ex ) {
+            std::get<1>(ret)[key] = ex.who();
+        }
     }
-    auto out = std::vector<sdbus::Variant>();
-    for (auto setting: settings) {
-        out.push_back(sdbus::Variant(ToSdBusVariant(setting)));
-    }
-    return out;
+    INFO  << "Get returned " << std::get<0>(ret).size() << " settings, " << std::get<1>(ret).size()<< " errors" << std::endl;
+    return ret;
 }
 
 std::map<std::string, sdbus::Variant> DbusAdaptor::GetAll() {
@@ -24,7 +26,7 @@ std::map<std::string, sdbus::Variant> DbusAdaptor::GetAll() {
 }
 
 void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& settings) {
-    DEBUG << "Set called" << std::endl;
+    INFO << "Set called" << std::endl;
 
     std::map<std::string, setting_t> in;
     for (auto const& [key, val] : settings) {

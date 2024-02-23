@@ -133,18 +133,14 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     }
 }
 
-std::vector<setting_t> SettingHandler::Get(const std::vector<std::string> &keys, SettingInterface *iface) {
-    std::vector<setting_t> out;
-    for (auto key: keys) {
-        if (m_settings.find(key) == m_settings.end()) {
-            throw SettingKeyException(key);
-        }
-        if (!m_settings[key].canRead(iface)) {
-            throw SettingAccessException(key);
-        }
-        out.push_back(m_settings[key].Get());
+setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
+    if (m_settings.find(key) == m_settings.end()) {
+        throw SettingKeyException(key);
     }
-    return out;
+    if (!m_settings[key].canRead(iface)) {
+        throw SettingAccessException(key);
+    }
+    return m_settings[key].Get();
 }
 
 void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface) {
