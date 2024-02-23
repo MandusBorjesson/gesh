@@ -35,11 +35,6 @@ public:
         unregisterAdaptor();
     }
 
-    void UpdateRequiresReset(const std::string& name) override
-    {
-        return;
-    }
-
     std::vector<sdbus::Variant> Get(const std::vector<std::string>& names) override;
     std::map<std::string, sdbus::Variant> GetAll() override;
     void Set(const std::map<std::string, sdbus::Variant>& settings);
