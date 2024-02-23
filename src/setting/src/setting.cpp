@@ -16,9 +16,9 @@ Setting::Setting(const std::string &name, const std::string &value, ISettingSour
 }
 
 bool Setting::Set(const setting_t &value, ISettingSource *source) {
-
+    setting_t new_value;
     try {
-        m_rule->Validate(value);
+        new_value = m_rule->ToSetting(value);
     } catch ( SettingException const& ex ) {
         WARNING << "Failed to set: " << m_name << ". Error: " << ex.what() << std::endl;
         return false;
@@ -26,7 +26,7 @@ bool Setting::Set(const setting_t &value, ISettingSource *source) {
 
     m_source = source;
 
-    if (m_value == value) {
+    if (m_value == new_value) {
         return false;
     }
     m_value = value;
@@ -123,6 +123,9 @@ std::map<std::string, setting_t> SettingHandler::Set(const std::map<std::string,
             std::string err = key + ": " + ex.what();
             throw SettingHandlerException(err);
         }
+
+        // Will throw if validation fails
+        m_settings[key].Rule()->ToSetting(val);
     }
     std::map<std::string, setting_t> updated;
     for ( auto const& [key, val] : settings ) {

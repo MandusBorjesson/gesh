@@ -18,14 +18,13 @@ public:
 
 class ISettingRule {
 public:
-    setting_t ToSetting(const std::string &value) {
-        auto val = _fromStr(value);
-        Validate(val);
+    setting_t ToSetting(const setting_t &value) {
+        auto val = value;
+        if (std::holds_alternative<std::string>(val)) {
+            val = _fromStr(std::get<std::string>(value));
+        }
+        _validate(val);
         return val;
-    }
-
-    void Validate(const setting_t &value) {
-        _validate(value);
     }
 
 protected:
