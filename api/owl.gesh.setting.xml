@@ -13,18 +13,6 @@
             <arg type="a{sv}" name="settings" />
         </signal>
         <!--
-            UpdateRequiresReset:
-	    @name: Name of the service that requires a reset to handle the new
-	      settings. THe name itself is not acted upon, it is only used for
-              information.
-
-	    Indicate to the settings manager that a change in settings can not
-            be handled dynamically.
-        -->
-        <method name="UpdateRequiresReset">
-            <arg type="s" name="name" direction="in" />
-        </method>
-        <!--
             Get:
 	    @names: List of setting names.
 	    @values: Values of the settings.
