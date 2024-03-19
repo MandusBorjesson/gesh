@@ -4,13 +4,14 @@
     <interface name="owl.gesh.setting">
         <!--
             SettingsUpdated:
-            @settings: Map of name and updated value for the
-              changed settings.
+            @updated: Updated settings, key and value.
+            @invalidated: Invalidated settings.
 
             Emitted when one or more settings change value.
         -->
         <signal name="SettingsUpdated">
-            <arg type="a{sv}" name="settings" />
+            <arg type="a{sv}" name="updated" />
+            <arg type="as" name="invalidated" />
         </signal>
         <!--
             Get:
@@ -28,20 +29,24 @@
         <!--
             GetAll:
 	    @settings: Setting names and values.
+	    @uninitialized: Settings that do not have a value.
 
 	    Get all settings provided by the D-Bus object.
         -->
         <method name="GetAll">
             <arg type="a{sv}" name="settings" direction="out" />
+            <arg type="as" name="uninitialized" direction="out" />
         </method>
         <!--
             Set:
-	    @settings: Setting names and values.
+	    @update: Setting names and values that should be updated.
+	    @invalidate: Setting names that should be invalidated (cleared).
 
 	    Set settings based on the provided settings names and values.
         -->
         <method name="Set">
-            <arg type="a{sv}" name="settings" direction="in" />
+            <arg type="a{sv}" name="update" direction="in" />
+            <arg type="as" name="invalidate" direction="in" />
         </method>
     </interface>
 </node>

@@ -96,6 +96,20 @@ order they are provided, effectively making later reader _higher priority_.
 When read, settings are validated towards the rules set up by the [Setting
 initializer](#initializers). If validation fails, the setting is ignored.
 
+### settingReaderFile
+Currently the only supported reader. Reads key-value pairs from a plaintext
+file with the format `<key> <value>`. Keys values can be cleared by using a
+special syntax `DELETE <key>`.
+
+**Example syntax**
+```
+test.txt:
+
+general/setting1 123
+interface/ethernet/enable true
+DELETE general/setting2
+```
+
 ## Reader factory
 The reader factory will find any setting fragments on the paths provided to it
 and return a vector of readers for the files.

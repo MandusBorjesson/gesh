@@ -44,8 +44,8 @@ public:
     }
 
     dbusGet_t Get(const std::vector<std::string>& keys) override;
-    std::map<std::string, sdbus::Variant> GetAll() override;
-    void Set(const std::map<std::string, sdbus::Variant>& settings);
+    std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> GetAll() override;
+    void Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate);
 
     void handleSettingsUpdated(const std::map<std::string, setting_t>& settings);
 
