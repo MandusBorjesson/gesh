@@ -2,7 +2,7 @@
 #include "setting.h"
 
 Setting::Setting(const std::string &name,
-                 const std::string &value,
+                 const std::optional<std::string> &value,
                  ISettingSource *source,
                  ISettingRule *rule,
                  std::vector<SettingInterface*> readers,
@@ -18,7 +18,7 @@ Setting::Setting(const std::string &name,
     }
 }
 
-bool Setting::Set(const setting_t &value, ISettingSource *source) {
+bool Setting::Set(const std::optional<setting_t> &value, ISettingSource *source) {
     setting_t new_value;
     try {
         new_value = m_rule->ToSetting(value);
@@ -31,7 +31,7 @@ bool Setting::Set(const setting_t &value, ISettingSource *source) {
     if (m_value == new_value) {
         return false;
     }
-    m_value = value;
+    m_value = new_value;
     return true;
 }
 
@@ -48,6 +48,10 @@ std::string Setting::Source() const {
 }
 
 bool Setting::canRead(SettingInterface *iface) {
+    // nullptr is used to indicate internal access
+    if (!iface) {
+        return true;
+    }
     for (auto interface : m_readers) {
         if (iface == interface) {
             return true;
@@ -76,6 +80,8 @@ std::ostream& operator<<(std::ostream& os, const Setting& s)
         os << std::get<int>(val);
     } else if (std::holds_alternative<bool>(val)) {
         os << std::get<bool>(val) ? "True" : "False";
+    } else if (std::holds_alternative<std::monostate>(val)) {
+        os << "<un-initialized>";
     } else {
         os << "N/A";
     }
@@ -96,6 +102,11 @@ public:
 class SettingAccessException : public SettingException {
 public:
     SettingAccessException(const std::string &msg) : SettingException(msg, ".access") {}
+};
+
+class SettingNoValueException : public SettingException {
+public:
+    SettingNoValueException(const std::string &msg) : SettingException(msg, ".novalue") {}
 };
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
@@ -140,7 +151,11 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
     if (!m_settings[key].canRead(iface)) {
         throw SettingAccessException(key);
     }
-    return m_settings[key].Get();
+    auto val = m_settings[key].Get();
+    if (std::holds_alternative<std::monostate>(val)) {
+        throw SettingNoValueException(key);
+    }
+    return val;
 }
 
 void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface) {
@@ -171,4 +186,14 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
         }
         interface->Manager()->handleSettingsUpdated(temp);
     }
+}
+
+std::map<std::string, Setting> SettingHandler::GetAll(SettingInterface *iface) const {
+    std::map<std::string, Setting> ret;
+    for ( auto entry : m_settings ) {
+        if(entry.second.canRead(iface)) {
+            ret[entry.first] = entry.second;
+        }
+    }
+    return ret;
 }
