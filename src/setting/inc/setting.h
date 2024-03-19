@@ -50,7 +50,7 @@ public:
 
     setting_t Get(const std::string &key, SettingInterface *iface);
     void Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface);
-    std::map<std::string, Setting> GetAll(SettingInterface *iface) const { return m_settings; };
+    std::map<std::string, Setting> GetAll(SettingInterface *iface) const;
 
 private:
     std::map<std::string, Setting> m_settings;

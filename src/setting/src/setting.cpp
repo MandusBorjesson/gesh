@@ -48,6 +48,10 @@ std::string Setting::Source() const {
 }
 
 bool Setting::canRead(SettingInterface *iface) {
+    // nullptr is used to indicate internal access
+    if (!iface) {
+        return true;
+    }
     for (auto interface : m_readers) {
         if (iface == interface) {
             return true;
@@ -171,4 +175,14 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
         }
         interface->Manager()->handleSettingsUpdated(temp);
     }
+}
+
+std::map<std::string, Setting> SettingHandler::GetAll(SettingInterface *iface) const {
+    std::map<std::string, Setting> ret;
+    for ( auto entry : m_settings ) {
+        if(entry.second.canRead(iface)) {
+            ret[entry.first] = entry.second;
+        }
+    }
+    return ret;
 }
