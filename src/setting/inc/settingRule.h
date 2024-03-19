@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <string>
 #include <variant>
+#include <optional>
 
 
 class SettingRuleException : public SettingException {
@@ -23,10 +24,16 @@ public:
 
 class ISettingRule {
 public:
-    setting_t ToSetting(const setting_t &value) {
-        auto val = value;
+    setting_t ToSetting(const std::optional<setting_t> &value) {
+        if (!value.has_value()) {
+            return setting_t();
+        }
+        auto val = value.value();
+        if (std::holds_alternative<std::monostate>(val)) {
+            return setting_t();
+        }
         if (std::holds_alternative<std::string>(val)) {
-            val = _fromStr(std::get<std::string>(value));
+            val = _fromStr(std::get<std::string>(val));
         }
         _validate(val);
         return val;

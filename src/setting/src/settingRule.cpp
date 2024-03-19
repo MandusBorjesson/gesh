@@ -8,6 +8,8 @@ std::string toType(const setting_t &value) {
         return "integer";
     } else if (std::holds_alternative<bool>(value)) {
         return "boolean";
+    } else if (std::holds_alternative<std::monostate>(value)) {
+        return "<un-initialized>";
     } else {
         return "unknown";
     }

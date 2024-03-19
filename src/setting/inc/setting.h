@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <ostream>
+#include <optional>
 
 class ISettingRule;
 class ISettingSource;
@@ -17,13 +18,13 @@ class Setting {
 public:
     Setting() = default;
     Setting(const std::string &name,
-            const std::string &value,
+            const std::optional<std::string> &value,
             ISettingSource *source,
             ISettingRule *rule,
             std::vector<SettingInterface*> readers,
             std::vector<SettingInterface*> writers
             );
-    bool Set(const setting_t &value, ISettingSource *source);
+    bool Set(const std::optional<setting_t> &value, ISettingSource *source);
     setting_t Get() const;
     std::string Name() const { return m_name; };
     std::string Source() const;

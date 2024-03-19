@@ -10,8 +10,8 @@ SettingReaderCsv::SettingReaderCsv(const std::string &path) : ISettingReader(pat
     INFO << "[SettingReaderCsv] Created for path " << path << std::endl;
 };
 
-std::map<std::string, std::string> SettingReaderCsv::GetSettings() {
-    std::map<std::string, std::string> out;
+std::map<std::string, std::optional<std::string>> SettingReaderCsv::GetSettings() {
+    std::map<std::string, std::optional<std::string>> out;
 
     std::ifstream infile(m_path);
     if (!infile.is_open()) {
@@ -28,7 +28,12 @@ std::map<std::string, std::string> SettingReaderCsv::GetSettings() {
             WARNING << "[SettingReaderCsv] Failed to parse line, ignoring: \"" << line << "\""<< std::endl;
             continue;
         }
-        out[key] = value;
+        // Allow setting clearing with syntax 'DELETE <key>'
+        if (key == "DELETE") {
+            out[value] = std::nullopt;
+        } else {
+            out[key] = value;
+        }
     }
     return out;
 }
