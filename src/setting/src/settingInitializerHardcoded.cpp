@@ -15,7 +15,7 @@ SettingInitializerHardcoded::SettingInitializerHardcoded() : ISettingInitializer
 
 std::vector<Setting> SettingInitializerHardcoded::InitializeSettings() {
     return std::vector<Setting> {
-        Setting("Anarchy/test1", "1", this, &stringRule, {netIface}, {netIface}),
+        Setting("Anarchy/test1", std::nullopt, this, &stringRule, {netIface}, {netIface}),
         Setting("Anarchy/test2", "string!", this, &stringRule, {netIface}, {netIface}),
         Setting("Anarchy/test3", "true", this, &stringRule, {netIface}, {netIface}),
         Setting("Integer/test1", "1", this, &intRule, {netIface}, {hwIface, netIface}),

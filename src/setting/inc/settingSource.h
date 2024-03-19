@@ -3,6 +3,7 @@
 #include <variant>
 #include <vector>
 #include <map>
+#include <optional>
 #include <string>
 #include "settingRule.h"
 #include "settingTypes.h"
@@ -33,5 +34,5 @@ protected:
 class ISettingReader : public ISettingSource {
 public:
     ISettingReader(const std::string &name) : ISettingSource(name) {};
-    virtual std::map<std::string, std::string> GetSettings() = 0;
+    virtual std::map<std::string, std::optional<std::string>> GetSettings() = 0;
 };

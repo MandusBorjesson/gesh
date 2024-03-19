@@ -17,20 +17,29 @@ dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
     return ret;
 }
 
-std::map<std::string, sdbus::Variant> DbusAdaptor::GetAll() {
-    auto out = std::map<std::string, sdbus::Variant>();
+std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DbusAdaptor::GetAll() {
+    std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> out;
     for (auto setting: m_handler->GetAll(m_iface)) {
-        out[setting.first] = ToSdBusVariant(setting.second.Get());
+        auto val = setting.second.Get();
+        if (std::holds_alternative<std::monostate>(val)) {
+            std::get<1>(out).push_back(setting.first);
+        } else {
+            std::get<0>(out)[setting.first] = ToSdBusVariant(val);
+        }
     }
     return out;
 }
 
-void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& settings) {
+void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
     INFO << "Set called" << std::endl;
 
     std::map<std::string, setting_t> in;
-    for (auto const& [key, val] : settings) {
+    for (auto const& [key, val] : update) {
         in[key] = ToSetting(val);
+    }
+
+    for (auto const& key : invalidate) {
+        in[key] = setting_t();
     }
 
     try {
@@ -69,11 +78,16 @@ setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
 
 void DbusAdaptor::handleSettingsUpdated(const std::map<std::string, setting_t>& settings) {
     std::map<std::string, sdbus::Variant> out;
+    std::vector<std::string> invalidated;
     for (auto const& [key, val] : settings) {
-        out[key] = ToSdBusVariant(val);
+        if (std::holds_alternative<std::monostate>(val)) {
+            invalidated.push_back(key);
+        } else {
+            out[key] = ToSdBusVariant(val);
+        }
     }
 
     if (!out.empty()) {
-        emitSettingsUpdated(out);
+        emitSettingsUpdated(out, invalidated);
     }
 }
