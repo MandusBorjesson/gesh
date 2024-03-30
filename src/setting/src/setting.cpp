@@ -1,4 +1,3 @@
-#include "log.h"
 #include "setting.h"
 
 Setting::Setting(const std::string &name,
@@ -110,7 +109,8 @@ public:
 };
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<ISettingReader*> &readers): m_interfaces(initializer.Interfaces()) {
+                               std::vector<ISettingReader*> &readers,
+                               Log &logger): m_interfaces(initializer.Interfaces()), log(logger.getChild("handler")) {
 
     auto settings = initializer.InitializeSettings();
     bool settings_ok = true;
@@ -123,15 +123,15 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
         }
     }
     if (!settings_ok) {
-        CRITICAL << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!" << std::endl;
+        log.critical() << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!";
     }
 
     for (auto reader : readers) {
-        INFO << "[SettingHandler] Fetching settings from " << reader->Alias() << std::endl;
+        log.info() << "Fetching settings from " << reader->Alias();
         for (auto setting : reader->GetSettings()) {
-            DEBUG << "Setting: " << setting.first << std::endl;
+            log.debug() << "Setting: " << setting.first;
             if (m_settings.find(setting.first) == m_settings.end()) {
-                WARNING << "Unknown setting: " << setting.first << std::endl;
+                log.warning() << "Unknown setting: " << setting.first;
                 continue;
             }
             try {

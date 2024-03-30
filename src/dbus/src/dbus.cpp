@@ -1,8 +1,7 @@
 #include "dbus.h"
-#include "log.h"
 
 dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
-    INFO << "Get called" << std::endl;
+    log.info() << "Get called";
 
     dbusGet_t ret;
     for (auto key: keys) {
@@ -13,7 +12,7 @@ dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
             std::get<1>(ret)[key] = ex.who();
         }
     }
-    INFO  << "Get returned " << std::get<0>(ret).size() << " settings, " << std::get<1>(ret).size()<< " errors" << std::endl;
+    log.info()  << "Get returned " << std::get<0>(ret).size() << " settings, " << std::get<1>(ret).size()<< " errors";
     return ret;
 }
 
@@ -31,7 +30,7 @@ std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> Dbus
 }
 
 void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
-    INFO << "Set called" << std::endl;
+    log.info() << "Set called";
 
     std::map<std::string, setting_t> in;
     for (auto const& [key, val] : update) {
@@ -71,7 +70,6 @@ setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
         return bool(val);
     } else {
         auto err = "Unknown variant type '" + type + "'";
-        ERROR << err << std::endl;
         throw sdbus::Error("own.gesh.Error", err);
     }
 }
@@ -87,7 +85,10 @@ void DbusAdaptor::handleSettingsUpdated(const std::map<std::string, setting_t>& 
         }
     }
 
-    if (!out.empty()) {
+    if (!out.empty() || !invalidated.empty()) {
+        log.info() << "Emitting SettingsUpdated: " << out.size() << " changed, " << invalidated.size() << " invalidated";
         emitSettingsUpdated(out, invalidated);
+    } else {
+        log.debug() << "No setting changed, not emitting SettingsUpdated";
     }
 }

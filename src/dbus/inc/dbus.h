@@ -29,10 +29,9 @@ class DbusAdaptor final : public sdbus::AdaptorInterfaces< owl::gesh::setting_ad
                           public ISettingApiManager
 {
 public:
-    DbusAdaptor(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface)
-    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface)
+    DbusAdaptor(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
+    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(iface->Name()))
     {
-        INFO << "Setting handler object created at: " << DBUS_PATH + iface->Name() << std::endl;
         registerAdaptor();
         emitInterfacesAddedSignal({owl::gesh::setting_adaptor::INTERFACE_NAME});
     }
@@ -54,4 +53,5 @@ private:
     setting_t ToSetting(const sdbus::Variant &val) const;
     SettingHandler *m_handler;
     SettingInterface *m_iface;
+    Log log;
 };

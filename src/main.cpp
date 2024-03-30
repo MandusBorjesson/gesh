@@ -11,7 +11,8 @@
 constexpr auto DBUS_SERVICE = "owl.gesh";
 
 void signalHandler( int signum ) {
-   ERROR << "Interrupt signal (" << signum << ") received.\n";
+   auto log = Log("interrupt");
+   log.error() << "Interrupt signal (" << signum << ") received.";
 
    // cleanup and close up stuff here
    // terminate program
@@ -20,24 +21,27 @@ void signalHandler( int signum ) {
 }
 
 void print_help() {
-    INFO << std::endl;
-    INFO << "Usage:" << std::endl;
-    INFO << " gesh [options]" << std::endl;
-    INFO << std::endl;
-    INFO << "Options:" << std::endl;
-    INFO << " -d, --directory <dir>    search directory for fragments" << std::endl;
-    INFO << std::endl;
-    INFO << " -h, --help               display this help" << std::endl;
-    INFO << " -v, --version            display version" << std::endl;
+    auto log = Log();
+    log.none() << "Usage:";
+    log.none() << " gesh [options]";
+    log.none();
+    log.none() << "Options:";
+    log.none() << " -d, --directory <dir>    search directory for fragments";
+    log.none();
+    log.none() << " -h, --help               display this help";
+    log.none() << " -v, --version            display version";
 }
 
 int main(int argc, char *argv[])
 {
     signal(SIGINT, signalHandler);
 
-    INFO << "Gesh - Good enough setting handler" << std::endl;
-    INFO << "Git SHA: " << BUILD_VERSION << std::endl;
-    INFO << "Build: " << BUILD_DATE << std::endl;
+    auto log = Log();
+    log.info() << "Gesh - Good enough setting handler";
+    log.info() << "Git SHA: " << BUILD_VERSION;
+    log.info() << "Build: " << BUILD_DATE;
+
+    log = Log("main");
 
     std::vector<std::string> searchPaths;
 
@@ -54,42 +58,45 @@ int main(int argc, char *argv[])
                 searchPaths.push_back(std::string(argv[i+1]));
                 i++;
             } else {
-                ERROR << "Missing argument after " << arg << std::endl;
+                log.error() << "Missing argument after " << arg;
                 print_help();
                 return 1;
             }
         } else {
-            ERROR << "Unknown argument: " << arg << std::endl;
+            log.error() << "Unknown argument: " << arg;
             print_help();
             return 1;
         }
     }
 
+    auto setting_logger = Log("setting");
     auto init = SettingInitializerHardcoded();
-    auto srf = SettingReaderFactory(searchPaths);
+    auto srf = SettingReaderFactory(searchPaths, setting_logger);
     std::vector<ISettingReader*> readers = srf.getReaders();
 
-    DEBUG << "Initializing settings... " << std::endl;
-    auto handler = SettingHandler(init, readers);
-    DEBUG << "Setting initialization DONE. " << std::endl;
+    log.debug() << "Initializing settings... ";
+    auto handler = SettingHandler(init, readers, setting_logger);
+    log.debug() << "Setting initialization DONE. ";
     for ( auto const& [key, val] : handler.GetAll(nullptr) ) {
-        DEBUG << val << std::endl;
+        log.debug() << "    " << val;
     }
 
     auto connection = sdbus::createSessionBusConnection();
     connection->requestName(DBUS_SERVICE);
     connection->enterEventLoopAsync();
-    DEBUG << "D-Bus service name aquired. " << std::endl;
+    log.debug() << "D-Bus service name aquired. ";
 
     auto manager = std::make_unique<ManagerAdaptor>(*connection, DBUS_PATH);
     std::vector<std::shared_ptr<DbusAdaptor>> dbusManagers;
 
+    auto dbus_logger = Log("dbus");
     for ( auto & iface : init.Interfaces() ) {
-        auto manager = std::make_shared<DbusAdaptor>(*connection, &handler, iface);
+        auto manager = std::make_shared<DbusAdaptor>(*connection, &handler, iface, dbus_logger);
         iface->RegisterManager(manager);
         dbusManagers.push_back(manager);
+        dbus_logger.info() << "Handler registered created at: " << DBUS_PATH + iface->Name();
     }
-    DEBUG << "D-Bus objects registered. " << std::endl;
+    log.debug() << "D-Bus objects registered. ";
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));

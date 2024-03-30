@@ -1,5 +1,6 @@
 #pragma once
 
+#include "log.h"
 #include "settingSource.h"
 #include "settingRule.h"
 #include "settingTypes.h"
@@ -47,7 +48,8 @@ private:
 class SettingHandler {
 public:
     SettingHandler(ISettingInitializer &initializer,
-                   std::vector<ISettingReader*> &readers);
+                   std::vector<ISettingReader*> &readers,
+                   Log &logger);
 
     setting_t Get(const std::string &key, SettingInterface *iface);
     void Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface);
@@ -56,4 +58,5 @@ public:
 private:
     std::map<std::string, Setting> m_settings;
     std::vector<SettingInterface*> m_interfaces;
+    Log log;
 };

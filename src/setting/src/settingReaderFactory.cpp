@@ -1,4 +1,3 @@
-#include "log.h"
 #include "settingReaderFactory.h"
 #include "settingReaderFile.h"
 #include <algorithm>
@@ -36,10 +35,10 @@ struct fragment_priority
 };
 
 std::vector<ISettingReader*> SettingReaderFactory::getReaders() {
-    INFO << "[SettingReaderFactory] Finding setting readers..." << std::endl;
-    DEBUG << "[SettingReaderFactory] Search paths:" << std::endl;
+    log.info() << "Finding setting readers...";
+    log.debug() << "Search paths:";
     for ( auto const &p : m_paths ) {
-        DEBUG << "[SettingReaderFactory]   " << p << std::endl;
+        log.debug() << "   " << p;
     }
 
     std::vector<std::string> fragments;
@@ -63,9 +62,9 @@ std::vector<ISettingReader*> SettingReaderFactory::getReaders() {
     for (auto const & fragment : fragments ) {
         auto suffix = fragment.substr(fragment.find_last_of(".") + 1);
         if ( suffix == "csv" ) {
-            out.push_back(new SettingReaderCsv(fragment));
+            out.push_back(new SettingReaderCsv(fragment, log));
         } else {
-            ERROR << "Internal error: Format should be supported but we have no handling for it!! Format: '." << suffix << "' (" << fragment << ")" << std::endl;
+            log.error() << "Internal error: Format should be supported but we have no handling for it!! Format: '." << suffix << "' (" << fragment << ")";
         }
     }
     return out;
