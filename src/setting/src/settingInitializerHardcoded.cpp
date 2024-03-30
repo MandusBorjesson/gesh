@@ -1,6 +1,7 @@
 #include "settingInitializerHardcoded.h"
 #include "settingInterface.h"
 #include "settingRule.h"
+#include "log.h"
 #include <memory>
 
 auto stringRule = SettingRuleString();

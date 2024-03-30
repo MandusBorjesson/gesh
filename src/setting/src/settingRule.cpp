@@ -1,5 +1,4 @@
 #include "settingRule.h"
-#include "log.h"
 
 std::string toType(const setting_t &value) {
     if (std::holds_alternative<std::string>(value)) {

@@ -12,7 +12,8 @@ using setting_t = std::variant<std::monostate, bool, int, std::string>;
 
 struct SettingException : public std::exception {
     SettingException(const std::string &msg, const std::string child = "") : m_exc("setting" + child), m_msg(m_exc + ": " + msg) {
-        WARNING << m_msg << std::endl;
+        auto log = Log(m_exc);
+        log.warning() << msg;
     }
     virtual const char* what() const throw()
     {
