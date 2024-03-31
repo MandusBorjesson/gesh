@@ -2,7 +2,7 @@
 
 Setting::Setting(const std::string &name,
                  const std::optional<std::string> &value,
-                 ISettingSource *source,
+                 std::shared_ptr<ISettingSource> source,
                  ISettingRule *rule,
                  std::vector<SettingInterface*> readers,
                  std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers) {
@@ -17,7 +17,7 @@ Setting::Setting(const std::string &name,
     }
 }
 
-bool Setting::Set(const std::optional<setting_t> &value, ISettingSource *source) {
+bool Setting::Set(const std::optional<setting_t> &value, std::shared_ptr<ISettingSource> source) {
     setting_t new_value;
     try {
         new_value = m_rule->ToSetting(value);
@@ -109,7 +109,7 @@ public:
 };
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<ISettingReader*> &readers,
+                               std::vector<std::shared_ptr<ISettingReader>> &readers,
                                Log &logger): m_interfaces(initializer.Interfaces()), log(logger.getChild("handler")) {
 
     auto settings = initializer.InitializeSettings();
@@ -127,20 +127,7 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     }
 
     for (auto reader : readers) {
-        log.info() << "Fetching settings from " << reader->Alias();
-        for (auto setting : reader->GetSettings()) {
-            log.debug() << "Setting: " << setting.first;
-            if (m_settings.find(setting.first) == m_settings.end()) {
-                log.warning() << "Unknown setting: " << setting.first;
-                continue;
-            }
-            try {
-                auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
-                m_settings[setting.first].Set(val, reader);
-            } catch ( SettingRuleException const& ex ) {
-                continue;
-            }
-        }
+        readSettings(reader);
     }
 }
 
@@ -156,6 +143,45 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
         throw SettingNoValueException(key);
     }
     return val;
+}
+
+void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_t> &updated) {
+    log.debug() << updated.size() << " settings updated";
+    for (const auto interface : m_interfaces) {
+        std::map<std::string, setting_t> temp;
+        for (const auto& [key, val] : updated) {
+            if(m_settings[key].canRead(interface)) {
+                temp[key] = val;
+            }
+        }
+        auto manager = interface->Manager();
+        if (manager) {
+            manager->handleSettingsUpdated(temp);
+        } else {
+            log.info() << "Interface '" << interface->Name() << "' has no manager, skipping";
+        }
+    }
+}
+
+void SettingHandler::readSettings(std::shared_ptr<ISettingReader> reader) {
+    log.info() << "Fetching settings from " << reader->Alias();
+    std::map<std::string, setting_t> updated;
+    for (auto setting : reader->GetSettings()) {
+        log.debug() << "Setting: " << setting.first;
+        if (m_settings.find(setting.first) == m_settings.end()) {
+            log.warning() << "Unknown setting: " << setting.first;
+            continue;
+        }
+        try {
+            auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
+            if(m_settings[setting.first].Set(val, reader)) {
+                updated[setting.first] = val;
+            }
+        } catch ( SettingRuleException const& ex ) {
+            continue;
+        }
+    }
+    _handleUpdatedSettings(updated);
 }
 
 void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface) {
@@ -177,15 +203,7 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
         }
     }
 
-    for (const auto interface : m_interfaces) {
-        std::map<std::string, setting_t> temp;
-        for (const auto& [key, val] : updated) {
-            if(m_settings[key].canRead(interface)) {
-                temp[key] = val;
-            }
-        }
-        interface->Manager()->handleSettingsUpdated(temp);
-    }
+    _handleUpdatedSettings(updated);
 }
 
 std::map<std::string, Setting> SettingHandler::GetAll(SettingInterface *iface) const {

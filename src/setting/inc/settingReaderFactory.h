@@ -6,7 +6,8 @@ class SettingReaderFactory {
     std::vector<std::string> supportedFormats = {"csv"};
 public:
     SettingReaderFactory(std::vector<std::string> searchPaths, Log &logger) : m_paths(searchPaths), log(logger.getChild("factory")) {};
-    std::vector<ISettingReader*> getReaders();
+    std::optional<std::shared_ptr<ISettingReader>> getReader(const std::string &path);
+    std::vector<std::shared_ptr<ISettingReader>> getReaders();
 
 protected:
     std::vector<std::string> m_paths;
