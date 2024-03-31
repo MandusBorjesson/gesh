@@ -20,12 +20,12 @@ public:
     Setting() = default;
     Setting(const std::string &name,
             const std::optional<std::string> &value,
-            ISettingSource *source,
+            std::shared_ptr<ISettingSource> source,
             ISettingRule *rule,
             std::vector<SettingInterface*> readers,
             std::vector<SettingInterface*> writers
             );
-    bool Set(const std::optional<setting_t> &value, ISettingSource *source);
+    bool Set(const std::optional<setting_t> &value, std::shared_ptr<ISettingSource> source);
     setting_t Get() const;
     std::string Name() const { return m_name; };
     std::string Source() const;
@@ -39,7 +39,7 @@ private:
     bool m_good{false};
     std::string m_name;
     setting_t m_value;
-    ISettingSource *m_source;
+    std::shared_ptr<ISettingSource> m_source;
     ISettingRule *m_rule;
     std::vector<SettingInterface*> m_readers;
     std::vector<SettingInterface*> m_writers;
@@ -48,14 +48,16 @@ private:
 class SettingHandler {
 public:
     SettingHandler(ISettingInitializer &initializer,
-                   std::vector<ISettingReader*> &readers,
+                   std::vector<std::shared_ptr<ISettingReader>> &readers,
                    Log &logger);
 
+    void readSettings(std::shared_ptr<ISettingReader> reader);
     setting_t Get(const std::string &key, SettingInterface *iface);
     void Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface);
     std::map<std::string, Setting> GetAll(SettingInterface *iface) const;
 
 private:
+    void _handleUpdatedSettings(const std::map<std::string, setting_t> &updated);
     std::map<std::string, Setting> m_settings;
     std::vector<SettingInterface*> m_interfaces;
     Log log;

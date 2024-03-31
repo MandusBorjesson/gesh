@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     auto setting_logger = Log("setting");
     auto init = SettingInitializerHardcoded();
     auto srf = SettingReaderFactory(searchPaths, setting_logger);
-    std::vector<ISettingReader*> readers = srf.getReaders();
+    auto readers = srf.getReaders();
 
     log.debug() << "Initializing settings... ";
     auto handler = SettingHandler(init, readers, setting_logger);
@@ -86,15 +86,17 @@ int main(int argc, char *argv[])
     connection->enterEventLoopAsync();
     log.debug() << "D-Bus service name aquired. ";
 
-    auto manager = std::make_unique<ManagerAdaptor>(*connection, DBUS_PATH);
-    std::vector<std::shared_ptr<DbusAdaptor>> dbusManagers;
+    auto manager = std::make_unique<ManagerAdaptor>(*connection, "/");
+    std::vector<std::shared_ptr<DBusGeshSetting>> dbus_settings;
 
     auto dbus_logger = Log("dbus");
+    auto manager_setting_if = SettingInterface("management");
+    auto dbus_manager = std::make_shared<DBusGeshManagement>(*connection, &handler, &manager_setting_if, dbus_logger);
+
     for ( auto & iface : init.Interfaces() ) {
-        auto manager = std::make_shared<DbusAdaptor>(*connection, &handler, iface, dbus_logger);
+        auto manager = std::make_shared<DBusGeshSetting>(*connection, &handler, iface, dbus_logger);
         iface->RegisterManager(manager);
-        dbusManagers.push_back(manager);
-        dbus_logger.info() << "Handler registered created at: " << DBUS_PATH + iface->Name();
+        dbus_settings.push_back(manager);
     }
     log.debug() << "D-Bus objects registered. ";
 

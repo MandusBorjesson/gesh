@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<node name="">
+    <interface name="owl.gesh.management">
+        <!--
+            Import:
+            @file: Path to file containing settings
+
+            Import a file containing settings, updating any values contained in
+            the file. File parser is selected automatically based on file ending.
+
+            This API honors rules and other limitations, meaning any violating
+            settings in 'file' will not be set. Such errors are silently
+            ignored, meaning violators are not updated.
+        -->
+        <method name="Import">
+            <arg type="s" name="file" direction="in" />
+        </method>
+    </interface>
+</node>

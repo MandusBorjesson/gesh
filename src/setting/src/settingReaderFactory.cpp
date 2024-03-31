@@ -34,7 +34,16 @@ struct fragment_priority
     }
 };
 
-std::vector<ISettingReader*> SettingReaderFactory::getReaders() {
+std::optional<std::shared_ptr<ISettingReader>> SettingReaderFactory::getReader(const std::string &path) {
+    auto suffix = path.substr(path.find_last_of(".") + 1);
+    if ( suffix == "csv" ) {
+        return std::make_shared<SettingReaderCsv> (path, log);
+    }
+    log.error() << "Cannot determine reader for file type '" << suffix << "' (" << path << ")";
+    return std::nullopt;
+}
+
+std::vector<std::shared_ptr<ISettingReader>> SettingReaderFactory::getReaders() {
     log.info() << "Finding setting readers...";
     log.debug() << "Search paths:";
     for ( auto const &p : m_paths ) {
@@ -58,13 +67,11 @@ std::vector<ISettingReader*> SettingReaderFactory::getReaders() {
     }
     std::sort(fragments.begin(), fragments.end(), fragment_priority());
 
-    std::vector<ISettingReader*> out;
+    std::vector<std::shared_ptr<ISettingReader>> out;
     for (auto const & fragment : fragments ) {
-        auto suffix = fragment.substr(fragment.find_last_of(".") + 1);
-        if ( suffix == "csv" ) {
-            out.push_back(new SettingReaderCsv(fragment, log));
-        } else {
-            log.error() << "Internal error: Format should be supported but we have no handling for it!! Format: '." << suffix << "' (" << fragment << ")";
+        auto reader = getReader(fragment);
+        if (reader.has_value()) {
+            out.push_back(reader.value());
         }
     }
     return out;

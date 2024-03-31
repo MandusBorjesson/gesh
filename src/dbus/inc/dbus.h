@@ -1,10 +1,14 @@
-#include "dbus-abstraction.h"
+#include "dbus-management.h"
+#include "dbus-setting.h"
 #include "setting.h"
 #include "log.h"
 #include "settingInterface.h"
 #include <sdbus-c++/sdbus-c++.h>
 
-constexpr auto DBUS_PATH = "/";
+namespace {
+std::string DBUS_PATH = "/owl/gesh/";
+std::string SETTING_SUBPATH = "settings/";
+}
 
 using dbusGet_t = std::tuple<std::map<std::string, sdbus::Variant>, std::map<std::string, std::string>>;
 
@@ -23,20 +27,21 @@ public:
     }
 };
 
-class DbusAdaptor final : public sdbus::AdaptorInterfaces< owl::gesh::setting_adaptor,
+class DBusGeshSetting final : public sdbus::AdaptorInterfaces< owl::gesh::setting_adaptor,
                                                 sdbus::ManagedObject_adaptor,
                                                 sdbus::Properties_adaptor >,
                           public ISettingApiManager
 {
 public:
-    DbusAdaptor(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
-    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(iface->Name()))
+    DBusGeshSetting(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
+    : AdaptorInterfaces(connection, DBUS_PATH + SETTING_SUBPATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(SETTING_SUBPATH + iface->Name()))
     {
+        log.info() << "Handler registered created at: " << getObjectPath();
         registerAdaptor();
         emitInterfacesAddedSignal({owl::gesh::setting_adaptor::INTERFACE_NAME});
     }
 
-    ~DbusAdaptor()
+    ~DBusGeshSetting()
     {
         emitInterfacesRemovedSignal({owl::gesh::setting_adaptor::INTERFACE_NAME});
         unregisterAdaptor();
@@ -51,6 +56,33 @@ public:
 private:
     sdbus::Variant ToSdBusVariant(const setting_t &val) const;
     setting_t ToSetting(const sdbus::Variant &val) const;
+    SettingHandler *m_handler;
+    SettingInterface *m_iface;
+    Log log;
+};
+
+class DBusGeshManagement final : public sdbus::AdaptorInterfaces< owl::gesh::management_adaptor,
+                                                sdbus::ManagedObject_adaptor,
+                                                sdbus::Properties_adaptor >
+{
+public:
+    DBusGeshManagement(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
+    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(iface->Name()))
+    {
+        log.info() << "Handler registered created at: " << getObjectPath();
+        registerAdaptor();
+        emitInterfacesAddedSignal({owl::gesh::management_adaptor::INTERFACE_NAME});
+    }
+
+    ~DBusGeshManagement()
+    {
+        emitInterfacesRemovedSignal({owl::gesh::management_adaptor::INTERFACE_NAME});
+        unregisterAdaptor();
+    }
+
+    void Import(const std::string& file) override;
+
+private:
     SettingHandler *m_handler;
     SettingInterface *m_iface;
     Log log;

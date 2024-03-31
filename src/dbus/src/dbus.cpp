@@ -1,6 +1,7 @@
 #include "dbus.h"
+#include "settingReaderFactory.h"
 
-dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
+dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
     log.info() << "Get called";
 
     dbusGet_t ret;
@@ -16,7 +17,7 @@ dbusGet_t DbusAdaptor::Get(const std::vector<std::string>& keys) {
     return ret;
 }
 
-std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DbusAdaptor::GetAll() {
+std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DBusGeshSetting::GetAll() {
     std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> out;
     for (auto setting: m_handler->GetAll(m_iface)) {
         auto val = setting.second.Get();
@@ -29,7 +30,7 @@ std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> Dbus
     return out;
 }
 
-void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
+void DBusGeshSetting::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
     log.info() << "Set called";
 
     std::map<std::string, setting_t> in;
@@ -49,7 +50,7 @@ void DbusAdaptor::Set(const std::map<std::string, sdbus::Variant>& update, const
 
 }
 
-sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) const {
+sdbus::Variant DBusGeshSetting::ToSdBusVariant(const setting_t &val) const {
     if (std::holds_alternative<std::string>(val)) {
         return sdbus::Variant(std::get<std::string>(val));
     } else if (std::holds_alternative<int>(val)) {
@@ -60,7 +61,7 @@ sdbus::Variant DbusAdaptor::ToSdBusVariant(const setting_t &val) const {
         return sdbus::Variant(NULL);
     }
 }
-setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
+setting_t DBusGeshSetting::ToSetting(const sdbus::Variant &val) const {
     auto type = val.peekValueType();
     if (type == "s") {
         return std::string(val);
@@ -74,7 +75,7 @@ setting_t DbusAdaptor::ToSetting(const sdbus::Variant &val) const {
     }
 }
 
-void DbusAdaptor::handleSettingsUpdated(const std::map<std::string, setting_t>& settings) {
+void DBusGeshSetting::handleSettingsUpdated(const std::map<std::string, setting_t>& settings) {
     std::map<std::string, sdbus::Variant> out;
     std::vector<std::string> invalidated;
     for (auto const& [key, val] : settings) {
@@ -91,4 +92,17 @@ void DbusAdaptor::handleSettingsUpdated(const std::map<std::string, setting_t>& 
     } else {
         log.debug() << "No setting changed, not emitting SettingsUpdated";
     }
+}
+
+void DBusGeshManagement::Import(const std::string& file) {
+    log.info() << "Import called: " << file;
+    auto factory = SettingReaderFactory({}, log);
+    auto reader = factory.getReader(file);
+
+    if (!reader.has_value()) {
+        std::string err = "Failed to get reader for '" + file + "'";
+        throw sdbus::Error("own.gesh.Error", err);
+    }
+
+    m_handler->readSettings(reader.value());
 }
