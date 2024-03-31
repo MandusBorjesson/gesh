@@ -36,7 +36,11 @@ public:
 class Log {
 public:
     Log(): m_name("") {};
-    Log(std::string name): m_name(std::move(name)) {};
+    Log(std::string name): m_name(std::move(name)) {
+        for ( auto & c : m_name ) {
+            if ( ! isalnum( c ) ) c = '.';
+        }
+    };
 
     Log getChild(std::string name)  { return Log(m_name + "." + name); };
 
