@@ -5,7 +5,7 @@ Setting::Setting(const std::string &name,
                  std::shared_ptr<ISettingSource> source,
                  ISettingRule *rule,
                  std::vector<SettingInterface*> readers,
-                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers) {
+                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers), log(Log("setting")) {
     if (!m_rule) {
         throw SettingRuleMissingException(name);
     }
@@ -14,6 +14,7 @@ Setting::Setting(const std::string &name,
         m_value = m_rule->ToSetting(value);
         m_good = true;
     } catch ( SettingException const& ex ) {
+        log.error() << "Failed to initialize setting: " << m_name << ", " << ex.what();
     }
 }
 
@@ -22,6 +23,7 @@ bool Setting::Set(const std::optional<setting_t> &value, std::shared_ptr<ISettin
     try {
         new_value = m_rule->ToSetting(value);
     } catch ( SettingException const& ex ) {
+        log.warning() << "Failed to set setting: " << m_name << ", " << ex.what();
         return false;
     }
 
@@ -123,7 +125,7 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
         }
     }
     if (!settings_ok) {
-        log.critical() << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!";
+        log.alert() << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!";
     }
 
     for (auto reader : readers) {
@@ -146,7 +148,7 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
 }
 
 void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_t> &updated) {
-    log.debug() << updated.size() << " settings updated";
+    log.info() << updated.size() << " settings updated";
     for (const auto interface : m_interfaces) {
         std::map<std::string, setting_t> temp;
         for (const auto& [key, val] : updated) {
@@ -158,7 +160,7 @@ void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_
         if (manager) {
             manager->handleSettingsUpdated(temp);
         } else {
-            log.info() << "Interface '" << interface->Name() << "' has no manager, skipping";
+            log.debug() << "Interface '" << interface->Name() << "' has no manager, skipping";
         }
     }
 }
@@ -167,7 +169,6 @@ void SettingHandler::readSettings(std::shared_ptr<ISettingReader> reader) {
     log.info() << "Fetching settings from " << reader->Alias();
     std::map<std::string, setting_t> updated;
     for (auto setting : reader->GetSettings()) {
-        log.debug() << "Setting: " << setting.first;
         if (m_settings.find(setting.first) == m_settings.end()) {
             log.warning() << "Unknown setting: " << setting.first;
             continue;
@@ -178,8 +179,10 @@ void SettingHandler::readSettings(std::shared_ptr<ISettingReader> reader) {
                 updated[setting.first] = val;
             }
         } catch ( SettingRuleException const& ex ) {
+            log.warning() << "Failed to set setting: " << setting.first << ", " << ex.what();
             continue;
         }
+        log.debug() << "Value of " << setting.first << " updated to " << setting.second.value_or("<un-initialized>");
     }
     _handleUpdatedSettings(updated);
 }
