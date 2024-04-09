@@ -17,14 +17,37 @@ namespace {
     };
 }
 
+std::string getColor(LogLevel level) {
+    switch(level) {
+    case DEBUG:
+        return "\033[0;90m";
+    case INFO:
+        return "\033[0;37m";
+    case NOTICE:
+        return "\033[0;36m";
+    case WARNING:
+        return "\033[0;33m";
+    case ERROR:
+        return "\033[0;91m";
+    case CRITICAL:
+        return "\033[0;31m";
+    case ALERT:
+        return "\033[0;101m";
+    case FATAL:
+        return "\033[0;41m";
+    default:
+        return "\033[0m";
+    }
+}
+
 class JournalLog {
 public:
     JournalLog(std::string &name, LogLevel level) {
-        operator << ((level == NONE ? "" : "<"+std::to_string(level)+"> ") +
+        operator << (getColor(level) + (level == NONE ? "" : "<"+std::to_string(level)+"> ") +
                     (name.empty() ? "" : "["+name+"] "));
     }
     ~JournalLog() {
-        std::cout << std::endl;
+        std::cout << getColor(NONE) << std::endl;
     }
     template<class T>
     JournalLog &operator<<(const T &msg) {

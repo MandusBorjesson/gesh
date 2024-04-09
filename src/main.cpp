@@ -74,17 +74,17 @@ int main(int argc, char *argv[])
     auto srf = SettingReaderFactory(searchPaths, setting_logger);
     auto readers = srf.getReaders();
 
-    log.debug() << "Initializing settings... ";
+    log.info() << "Initializing settings... ";
     auto handler = SettingHandler(init, readers, setting_logger);
-    log.debug() << "Setting initialization DONE. ";
+    log.notice() << "Setting initialization DONE. ";
     for ( auto const& [key, val] : handler.GetAll(nullptr) ) {
-        log.debug() << "    " << val;
+        log.info() << "    " << val;
     }
 
     auto connection = sdbus::createSessionBusConnection();
     connection->requestName(DBUS_SERVICE);
     connection->enterEventLoopAsync();
-    log.debug() << "D-Bus service name aquired. ";
+    log.notice() << "D-Bus service name aquired. ";
 
     auto manager = std::make_unique<ManagerAdaptor>(*connection, "/");
     std::vector<std::shared_ptr<DBusGeshSetting>> dbus_settings;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         iface->RegisterManager(manager);
         dbus_settings.push_back(manager);
     }
-    log.debug() << "D-Bus objects registered. ";
+    log.notice() << "D-Bus objects registered. ";
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(1));

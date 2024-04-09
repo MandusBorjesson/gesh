@@ -43,6 +43,7 @@ private:
     ISettingRule *m_rule;
     std::vector<SettingInterface*> m_readers;
     std::vector<SettingInterface*> m_writers;
+    Log log;
 };
 
 class SettingHandler {

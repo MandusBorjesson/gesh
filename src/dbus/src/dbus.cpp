@@ -2,7 +2,7 @@
 #include "settingReaderFactory.h"
 
 dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
-    log.info() << "Get called";
+    log.info() << "Get called, " << keys.size() << " settings requested";
 
     dbusGet_t ret;
     for (auto key: keys) {
@@ -10,6 +10,7 @@ dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
             auto setting = m_handler->Get(key, m_iface);
             std::get<0>(ret)[key] = sdbus::Variant(ToSdBusVariant(setting));
         } catch ( SettingException const & ex ) {
+            log.warning() << "Failed to get: " << key << ", " << ex.what();
             std::get<1>(ret)[key] = ex.who();
         }
     }
@@ -31,7 +32,7 @@ std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DBus
 }
 
 void DBusGeshSetting::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
-    log.info() << "Set called";
+    log.notice() << "Set called";
 
     std::map<std::string, setting_t> in;
     for (auto const& [key, val] : update) {
@@ -45,6 +46,7 @@ void DBusGeshSetting::Set(const std::map<std::string, sdbus::Variant>& update, c
     try {
         m_handler->Set(in, m_iface);
     } catch ( SettingException const & ex ) {
+        log.warning() << "Set failed: " << ex.what();
         throw sdbus::Error("own.gesh.Error", ex.what());
     }
 
