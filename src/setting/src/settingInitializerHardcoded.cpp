@@ -5,6 +5,7 @@
 #include <memory>
 
 auto stringRule = SettingRuleString();
+auto stringEnumRule = SettingRuleStringEnum({"YES","NO","MAYBE"});
 auto boolRule = SettingRuleBool();
 auto intRule = SettingRuleInt();
 auto intRuleRange = SettingRuleRangedInt(0, 10);
@@ -21,6 +22,9 @@ std::vector<Setting> SettingInitializerHardcoded::InitializeSettings() {
         Setting("Anarchy/test1", std::nullopt, source, &stringRule, {netIface}, {netIface}),
         Setting("Anarchy/test2", "string!", source, &stringRule, {netIface}, {netIface}),
         Setting("Anarchy/test3", "true", source, &stringRule, {netIface}, {netIface}),
+        Setting("String/enum/test1", std::nullopt, source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test2", "HEJ", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test3", "YES", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
         Setting("Integer/test1", "1", source, &intRule, {netIface}, {hwIface, netIface}),
         Setting("Integer/test2", "123", source, &intRule, {netIface}, {hwIface, netIface}),
         Setting("Integer/ranged/test1", "-4000", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),

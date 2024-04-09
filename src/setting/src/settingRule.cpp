@@ -1,4 +1,6 @@
 #include "settingRule.h"
+#include <iterator>
+#include <algorithm>
 
 std::string toType(const setting_t &value) {
     if (std::holds_alternative<std::string>(value)) {
@@ -21,6 +23,23 @@ setting_t SettingRuleString::_fromStr(const std::string &value) {
 void SettingRuleString::_validate(const setting_t &setting) {
     if (!std::holds_alternative<std::string>(setting)) {
         std::string err = "Invalid setting type " + toType(setting) + ", expected string";
+        throw SettingRuleException(err);
+    }
+}
+
+void SettingRuleStringEnum::_validate(const setting_t &setting) {
+    SettingRuleString::_validate(setting);
+
+    std::string val = std::get<std::string>(setting);
+
+    if (std::find(m_valids.begin(), m_valids.end(), val) == m_valids.end()) {
+        const char* const delim = "|";
+        std::ostringstream opt_ss;
+        std::copy(m_valids.begin(), m_valids.end(), std::ostream_iterator<std::string>(opt_ss, delim));
+        auto opt_str = opt_ss.str();
+        opt_str.pop_back();  // Remove last "|" symbol
+
+        std::string err = "'" + val + "' not in allowed values (" + opt_str + ")";
         throw SettingRuleException(err);
     }
 }
