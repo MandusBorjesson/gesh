@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <string>
 #include <variant>
+#include <vector>
 #include <optional>
 
 
@@ -51,6 +52,17 @@ public:
 protected:
     setting_t _fromStr(const std::string &value) override;
     void _validate(const setting_t &setting) override;
+};
+
+class SettingRuleStringEnum: public SettingRuleString {
+public:
+    SettingRuleStringEnum(std::vector<std::string> valid_values) : m_valids(valid_values) {};
+
+protected:
+    void _validate(const setting_t &setting) override;
+
+private:
+    std::vector<std::string> m_valids;
 };
 
 class SettingRuleBool: public ISettingRule {
