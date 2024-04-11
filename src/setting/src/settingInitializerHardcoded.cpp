@@ -13,27 +13,46 @@ auto intRuleRange = SettingRuleRangedInt(0, 10);
 auto hwIface = new SettingInterface("hardware");
 auto netIface = new SettingInterface("network");
 
-SettingInitializerHardcoded::SettingInitializerHardcoded() : ISettingInitializer("DEFAULT", {hwIface, netIface}) {};
+std::map<std::string, std::optional<std::string>> SettingReaderDefault::GetSettings() {
+    return {
+        {"Anarchy/test2", "string!"},
+        {"Anarchy/test3", "true"},
+        {"String/enum/test2", "HEJ"},
+        {"String/enum/test3", "YES"},
+        {"Integer/test1", "1"},
+        {"Integer/test2", "123"},
+        {"Integer/ranged/test1", "-4000"},
+        {"Integer/ranged/test2", "0"},
+        {"Integer/ranged/test3", "5"},
+        {"Boolean/test1", "true"},
+        {"Boolean/test2", "False"},
+        {"Boolean/test3", "falsy"},
+        {"Boolean/test4", "1"},
+        {"Boolean/test5", "01"},
+    };
+}
 
-std::vector<Setting> SettingInitializerHardcoded::InitializeSettings() {
+SettingInitializerDefault::SettingInitializerDefault() : ISettingInitializer("none", {hwIface, netIface}) {};
+
+std::vector<Setting> SettingInitializerDefault::InitializeSettings() {
     auto source = std::make_shared<ISettingSource> (*this);
 
     return std::vector<Setting> {
-        Setting("Anarchy/test1", std::nullopt, source, &stringRule, {netIface}, {netIface}),
-        Setting("Anarchy/test2", "string!", source, &stringRule, {netIface}, {netIface}),
-        Setting("Anarchy/test3", "true", source, &stringRule, {netIface}, {netIface}),
-        Setting("String/enum/test1", std::nullopt, source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("String/enum/test2", "HEJ", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("String/enum/test3", "YES", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/test1", "1", source, &intRule, {netIface}, {hwIface, netIface}),
-        Setting("Integer/test2", "123", source, &intRule, {netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test1", "-4000", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test2", "0", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test3", "5", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test1", "true", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test2", "False", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test3", "falsy", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test4", "1", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test5", "01", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Anarchy/test1", source, &stringRule, {netIface}, {netIface}),
+        Setting("Anarchy/test2", source, &stringRule, {netIface}, {netIface}),
+        Setting("Anarchy/test3", source, &stringRule, {netIface}, {netIface}),
+        Setting("String/enum/test1", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test2", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test3", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/test1", source, &intRule, {netIface}, {hwIface, netIface}),
+        Setting("Integer/test2", source, &intRule, {netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test1", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test2", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test3", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test1", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test2", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test3", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test4", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test5", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
     };
 }
