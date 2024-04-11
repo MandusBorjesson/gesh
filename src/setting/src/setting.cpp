@@ -1,31 +1,17 @@
 #include "setting.h"
 
 Setting::Setting(const std::string &name,
-                 const std::optional<std::string> &value,
                  std::shared_ptr<ISettingSource> source,
                  ISettingRule *rule,
                  std::vector<SettingInterface*> readers,
-                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers), log(Log("setting")) {
+                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers) {
     if (!m_rule) {
         throw SettingRuleMissingException(name);
-    }
-
-    try {
-        m_value = m_rule->ToSetting(value);
-        m_good = true;
-    } catch ( SettingException const& ex ) {
-        log.error() << "Failed to initialize setting: " << m_name << ", " << ex.what();
     }
 }
 
 bool Setting::Set(const std::optional<setting_t> &value, std::shared_ptr<ISettingSource> source) {
-    setting_t new_value;
-    try {
-        new_value = m_rule->ToSetting(value);
-    } catch ( SettingException const& ex ) {
-        log.warning() << "Failed to set setting: " << m_name << ", " << ex.what();
-        return false;
-    }
+    setting_t new_value = m_rule->ToSetting(value);
 
     m_source = source;
 
@@ -113,23 +99,20 @@ public:
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
                                std::vector<std::shared_ptr<ISettingReader>> &readers,
                                Log &logger): m_interfaces(initializer.Interfaces()), log(logger.getChild("handler")) {
+    log.notice() << "Settings handler instantiated, initializing settings... ";
 
     auto settings = initializer.InitializeSettings();
-    bool settings_ok = true;
-
     for (auto setting : settings) {
-        if (setting.Ok()) {
-            m_settings[setting.Name()] = setting;
-        } else {
-            settings_ok = false;
-        }
-    }
-    if (!settings_ok) {
-        log.alert() << "One or more setting(s) failed initialization. This is bad, and probably programmer error. The settings will not be available!";
+        m_settings[setting.Name()] = setting;
     }
 
     for (auto reader : readers) {
         readSettings(reader);
+    }
+
+    log.notice() << "Setting initialization DONE. ";
+    for ( auto const& [key, val] : m_settings ) {
+        log.info() << "    " << val;
     }
 }
 
@@ -178,7 +161,7 @@ void SettingHandler::readSettings(std::shared_ptr<ISettingReader> reader) {
             if(m_settings[setting.first].Set(val, reader)) {
                 updated[setting.first] = val;
             }
-        } catch ( SettingRuleException const& ex ) {
+        } catch ( SettingException const& ex ) {
             log.warning() << "Failed to set setting: " << setting.first << ", " << ex.what();
             continue;
         }
@@ -201,6 +184,7 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
     }
     std::map<std::string, setting_t> updated;
     for ( auto const& [key, val] : settings ) {
+        // The above call to 'ToSetting' should ensure no exceptions are thrown here.
         if(m_settings[key].Set(val, nullptr)) {
             updated[key] = val;
         }

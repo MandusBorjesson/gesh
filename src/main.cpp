@@ -70,16 +70,13 @@ int main(int argc, char *argv[])
     }
 
     auto setting_logger = Log("setting");
-    auto init = SettingInitializerHardcoded();
+    auto init = SettingInitializerDefault();
+    auto dflt = std::make_shared<SettingReaderDefault>();
     auto srf = SettingReaderFactory(searchPaths, setting_logger);
     auto readers = srf.getReaders();
+    readers.insert(readers.begin(), dflt);
 
-    log.info() << "Initializing settings... ";
     auto handler = SettingHandler(init, readers, setting_logger);
-    log.notice() << "Setting initialization DONE. ";
-    for ( auto const& [key, val] : handler.GetAll(nullptr) ) {
-        log.info() << "    " << val;
-    }
 
     auto connection = sdbus::createSessionBusConnection();
     connection->requestName(DBUS_SERVICE);

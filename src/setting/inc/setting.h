@@ -19,7 +19,6 @@ class Setting {
 public:
     Setting() = default;
     Setting(const std::string &name,
-            const std::optional<std::string> &value,
             std::shared_ptr<ISettingSource> source,
             ISettingRule *rule,
             std::vector<SettingInterface*> readers,
@@ -32,11 +31,9 @@ public:
     ISettingRule* Rule() const {return m_rule;};
     bool canRead(SettingInterface *iface);
     bool canWrite(SettingInterface *iface);
-    bool Ok() const { return m_good; };
 
     friend std::ostream& operator<<(std::ostream& os, const Setting& s);
 private:
-    bool m_good{false};
     std::string m_name;
     setting_t m_value;
     std::shared_ptr<ISettingSource> m_source;
