@@ -1,6 +1,7 @@
 #include "settingInitializerHardcoded.h"
 #include "settingInterface.h"
 #include "settingRule.h"
+#include "settingStorageFile.h"
 #include "log.h"
 #include <memory>
 
@@ -12,6 +13,10 @@ auto intRuleRange = SettingRuleRangedInt(0, 10);
 
 auto hwIface = new SettingInterface("hardware");
 auto netIface = new SettingInterface("network");
+
+auto logger = Log("storage");
+std::string file_path = "../";
+auto storageFile = new SettingStorageFile(file_path, logger);
 
 std::map<std::string, std::optional<std::string>> SettingReaderDefault::GetSettings() {
     return {
@@ -32,27 +37,26 @@ std::map<std::string, std::optional<std::string>> SettingReaderDefault::GetSetti
     };
 }
 
-SettingInitializerDefault::SettingInitializerDefault() : ISettingInitializer("-", {hwIface, netIface}) {};
+SettingInitializerDefault::SettingInitializerDefault() : ISettingInitializer({hwIface, netIface}, {storageFile}) {};
 
 std::vector<Setting> SettingInitializerDefault::InitializeSettings() {
-    auto source = std::make_shared<ISettingSource> (*this);
 
     return std::vector<Setting> {
-        Setting("Anarchy/test1", source, &stringRule, {netIface}, {netIface}),
-        Setting("Anarchy/test2", source, &stringRule, {netIface}, {}),
-        Setting("Anarchy/test3", source, &stringRule, {}, {netIface}),
-        Setting("String/enum/test1", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("String/enum/test2", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("String/enum/test3", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/test1", source, &intRule, {netIface}, {hwIface, netIface}),
-        Setting("Integer/test2", source, &intRule, {netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test1", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test2", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Integer/ranged/test3", source, &intRuleRange, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test1", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test2", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test3", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test4", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
-        Setting("Boolean/test5", source, &boolRule, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Anarchy/test1", &stringRule, storageFile, {netIface}, {netIface}),
+        Setting("Anarchy/test2", &stringRule, storageFile, {netIface}, {}),
+        Setting("Anarchy/test3", &stringRule, storageFile, {}, {netIface}),
+        Setting("String/enum/test1", &stringEnumRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test2", &stringEnumRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("String/enum/test3", &stringEnumRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/test1", &intRule, storageFile, {netIface}, {hwIface, netIface}),
+        Setting("Integer/test2", &intRule, storageFile, {netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test1", &intRuleRange,  storageFile,{hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test2", &intRuleRange, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Integer/ranged/test3", &intRuleRange, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test1", &boolRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test2", &boolRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test3", &boolRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test4", &boolRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
+        Setting("Boolean/test5", &boolRule, storageFile, {hwIface, netIface}, {hwIface, netIface}),
     };
 }

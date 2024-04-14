@@ -4,6 +4,7 @@
     <interface name="owl.gesh.management">
         <!--
             Import:
+            @layer: Layer to which the settings shall be saved
             @file: Path to file containing settings
 
             Import a file containing settings, updating any values contained in
@@ -14,6 +15,7 @@
             ignored, meaning violators are not updated.
         -->
         <method name="Import">
+            <arg type="s" name="layer" direction="in" />
             <arg type="s" name="file" direction="in" />
         </method>
     </interface>

@@ -5,9 +5,7 @@
 #include <sstream>
 
 
-SettingReaderCsv::SettingReaderCsv(const std::string &path, Log &logger) : ISettingReader(path), m_path(path), log(logger.getChild("file")) {
-    log.info() << "Created for path " << path;
-};
+SettingReaderCsv::SettingReaderCsv(const std::string &path, Log &logger) : ISettingReader(path), m_path(path), log(logger.getChild("file")) {};
 
 std::map<std::string, std::optional<std::string>> SettingReaderCsv::GetSettings() {
     std::map<std::string, std::optional<std::string>> out;
@@ -35,4 +33,19 @@ std::map<std::string, std::optional<std::string>> SettingReaderCsv::GetSettings(
         }
     }
     return out;
+}
+
+void SettingReaderCsv::write(std::map<std::string, std::optional<std::string>> &settings) {
+    std::ofstream file(m_path);
+    if (!file.is_open()) {
+        log.warning() << "Failed to open " << m_path << ", cannot write settings!";
+        return;
+    }
+    for ( auto &[key, value] : settings ) {
+        if (value.has_value()) {
+            file << key << " " << value.value() << std::endl;
+        } else {
+            file << "DELETE " << key << std::endl;
+        }
+    }
 }

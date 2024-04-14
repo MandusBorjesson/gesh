@@ -33,8 +33,8 @@ class DBusGeshSetting final : public sdbus::AdaptorInterfaces< owl::gesh::settin
                           public ISettingApiManager
 {
 public:
-    DBusGeshSetting(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
-    : AdaptorInterfaces(connection, DBUS_PATH + SETTING_SUBPATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(SETTING_SUBPATH + iface->Name()))
+    DBusGeshSetting(sdbus::IConnection& connection, SettingHandler *handler, SettingLayerHandler *layerHandler, SettingInterface *iface, Log &logger)
+    : AdaptorInterfaces(connection, DBUS_PATH + SETTING_SUBPATH + iface->Name()), m_handler(handler), m_layerHandler(layerHandler), m_iface(iface), log(logger.getChild(SETTING_SUBPATH + iface->Name()))
     {
         log.info() << "Handler registered created at: " << getObjectPath();
         registerAdaptor();
@@ -49,7 +49,7 @@ public:
 
     dbusGet_t Get(const std::vector<std::string>& keys) override;
     std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> GetAll() override;
-    void Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate);
+    void Set(const std::string &layer, const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate);
 
     void handleSettingsUpdated(const std::map<std::string, setting_t>& settings);
 
@@ -57,6 +57,7 @@ private:
     sdbus::Variant ToSdBusVariant(const setting_t &val) const;
     setting_t ToSetting(const sdbus::Variant &val) const;
     SettingHandler *m_handler;
+    SettingLayerHandler *m_layerHandler;
     SettingInterface *m_iface;
     Log log;
 };
@@ -66,8 +67,8 @@ class DBusGeshManagement final : public sdbus::AdaptorInterfaces< owl::gesh::man
                                                 sdbus::Properties_adaptor >
 {
 public:
-    DBusGeshManagement(sdbus::IConnection& connection, SettingHandler *handler, SettingInterface *iface, Log &logger)
-    : AdaptorInterfaces(connection, DBUS_PATH + iface->Name()), m_handler(handler), m_iface(iface), log(logger.getChild(iface->Name()))
+    DBusGeshManagement(sdbus::IConnection& connection, SettingHandler *handler, SettingLayerHandler *layerHandler, std::string &path, Log &logger)
+    : AdaptorInterfaces(connection, DBUS_PATH + path), m_handler(handler), m_layerHandler(layerHandler), log(logger.getChild(path))
     {
         log.info() << "Handler registered created at: " << getObjectPath();
         registerAdaptor();
@@ -80,10 +81,10 @@ public:
         unregisterAdaptor();
     }
 
-    void Import(const std::string& file) override;
+    void Import(const std::string& layer, const std::string& file) override;
 
 private:
     SettingHandler *m_handler;
-    SettingInterface *m_iface;
+    SettingLayerHandler *m_layerHandler;
     Log log;
 };
