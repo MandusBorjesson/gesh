@@ -1,4 +1,19 @@
 #include "setting.h"
+#include <iomanip>
+#include <iostream>
+
+std::string toString(const setting_t &setting) {
+    if (std::holds_alternative<std::string>(setting)) {
+        return std::get<std::string>(setting);
+    }
+    if (std::holds_alternative<int>(setting)) {
+        return std::to_string(std::get<int>(setting));
+    }
+    if (std::holds_alternative<bool>(setting)) {
+        return std::get<bool>(setting) ? "True" : "False";
+    }
+    return "-";
+}
 
 Setting::Setting(const std::string &name,
                  std::shared_ptr<ISettingSource> source,
@@ -56,26 +71,6 @@ bool Setting::canWrite(SettingInterface *iface) {
     return false;
 }
 
-std::ostream& operator<<(std::ostream& os, const Setting& s)
-{
-    os << "[" << s.Source() << "] " << s.Name() << " ";
-    auto val = s.Get();
-
-    if (std::holds_alternative<std::string>(val)) {
-        os << std::get<std::string>(val);
-    } else if (std::holds_alternative<int>(val)) {
-        os << std::get<int>(val);
-    } else if (std::holds_alternative<bool>(val)) {
-        os << std::get<bool>(val) ? "True" : "False";
-    } else if (std::holds_alternative<std::monostate>(val)) {
-        os << "<un-initialized>";
-    } else {
-        os << "N/A";
-    }
-
-    return os;
-}
-
 class SettingHandlerException : public SettingException {
 public:
     SettingHandlerException(const std::string &msg) : SettingException(msg, ".handler") {}
@@ -111,9 +106,7 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
     }
 
     log.notice() << "Setting initialization DONE. ";
-    for ( auto const& [key, val] : m_settings ) {
-        log.info() << "    " << val;
-    }
+    _prettyPrint(m_settings);
 }
 
 setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
@@ -128,6 +121,40 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
         throw SettingNoValueException(key);
     }
     return val;
+}
+
+void SettingHandler::_prettyPrint(const std::map<std::string, Setting> &updated) {
+    constexpr auto W_KEY = 25;
+    constexpr auto W_VAL = 20;
+    constexpr auto W_IFC = 10;
+
+    log.info() << std::left << std::setw(W_KEY) << "Key"
+               << std::setw(W_VAL) << "Value"
+               << std::setw(W_IFC*m_interfaces.size()) << "Permissions"
+               << "  " << "Source";
+    auto os = log.info();
+
+    os << std::left << std::setw(W_KEY + W_VAL) << "";
+    for (const auto interface : m_interfaces) {
+        os << std::setw(W_IFC) << interface->Name();
+    }
+    os << "\n";
+
+    for ( auto const& [key, val] : m_settings ) {
+
+        auto os = log.info();
+        os << std::left;
+        os << std::setw(W_KEY) << key
+           << std::setw(W_VAL) << toString(val.Get());
+
+        for (const auto interface : m_interfaces) {
+            std::string perm;
+            perm.append(m_settings[key].canRead(interface) ? "r" : "-");
+            perm.append(m_settings[key].canWrite(interface) ? "w" : "-");
+            os << std::setw(W_IFC) << perm;
+        }
+        os << "  " << val.Source();
+    }
 }
 
 void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_t> &updated) {

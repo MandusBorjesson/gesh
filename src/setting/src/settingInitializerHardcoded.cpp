@@ -32,15 +32,15 @@ std::map<std::string, std::optional<std::string>> SettingReaderDefault::GetSetti
     };
 }
 
-SettingInitializerDefault::SettingInitializerDefault() : ISettingInitializer("none", {hwIface, netIface}) {};
+SettingInitializerDefault::SettingInitializerDefault() : ISettingInitializer("-", {hwIface, netIface}) {};
 
 std::vector<Setting> SettingInitializerDefault::InitializeSettings() {
     auto source = std::make_shared<ISettingSource> (*this);
 
     return std::vector<Setting> {
         Setting("Anarchy/test1", source, &stringRule, {netIface}, {netIface}),
-        Setting("Anarchy/test2", source, &stringRule, {netIface}, {netIface}),
-        Setting("Anarchy/test3", source, &stringRule, {netIface}, {netIface}),
+        Setting("Anarchy/test2", source, &stringRule, {netIface}, {}),
+        Setting("Anarchy/test3", source, &stringRule, {}, {netIface}),
         Setting("String/enum/test1", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
         Setting("String/enum/test2", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
         Setting("String/enum/test3", source, &stringEnumRule, {hwIface, netIface}, {hwIface, netIface}),
