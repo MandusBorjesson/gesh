@@ -32,7 +32,6 @@ public:
     bool canRead(SettingInterface *iface);
     bool canWrite(SettingInterface *iface);
 
-    friend std::ostream& operator<<(std::ostream& os, const Setting& s);
 private:
     std::string m_name;
     setting_t m_value;
@@ -55,6 +54,7 @@ public:
     std::map<std::string, Setting> GetAll(SettingInterface *iface) const;
 
 private:
+    void _prettyPrint(const std::map<std::string, Setting> &updated);
     void _handleUpdatedSettings(const std::map<std::string, setting_t> &updated);
     std::map<std::string, Setting> m_settings;
     std::vector<SettingInterface*> m_interfaces;
