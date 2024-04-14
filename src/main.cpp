@@ -1,7 +1,6 @@
 #include "dbus.h"
 #include "setting.h"
 #include "settingInitializerHardcoded.h"
-#include "settingReaderFactory.h"
 #include <sdbus-c++/sdbus-c++.h>
 #include "log.h"
 #include "version.h"
@@ -26,10 +25,10 @@ void print_help() {
     log.none() << " gesh [options]";
     log.none();
     log.none() << "Options:";
-    log.none() << " -d, --directory <dir>    search directory for fragments";
+    log.none() << " -l, --layers <l1>,<l2>...    Space-separated list of layers to use";
     log.none();
-    log.none() << " -h, --help               display this help";
-    log.none() << " -v, --version            display version";
+    log.none() << " -h, --help                   display this help";
+    log.none() << " -v, --version                display version";
 }
 
 int main(int argc, char *argv[])
@@ -43,7 +42,7 @@ int main(int argc, char *argv[])
 
     log = Log("main");
 
-    std::vector<std::string> searchPaths;
+    SettingLayerHandler layer_handler;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -52,10 +51,10 @@ int main(int argc, char *argv[])
             return 0;
         } else if (arg == "-v" || arg == "--version") {
             return 0;
-        } else if (arg == "-d" || arg == "--directory") {
-            // Try to grab the next argument, a directory
+        } else if (arg == "-l" || arg == "--layers") {
+            // Try to grab the next argument, a string
             if (i+1 < argc) {
-                searchPaths.push_back(std::string(argv[i+1]));
+                layer_handler.initialize(std::string(argv[i+1]));
                 i++;
             } else {
                 log.error() << "Missing argument after " << arg;
@@ -71,12 +70,19 @@ int main(int argc, char *argv[])
 
     auto setting_logger = Log("setting");
     auto init = SettingInitializerDefault();
-    auto dflt = std::make_shared<SettingReaderDefault>();
-    auto srf = SettingReaderFactory(searchPaths, setting_logger);
-    auto readers = srf.getReaders();
-    readers.insert(readers.begin(), dflt);
 
-    auto handler = SettingHandler(init, readers, setting_logger);
+    std::vector<SettingLayer*> layers = layer_handler.layers();
+    for ( auto storage : init.Storages() ) {
+        storage->registerLayers(layers);
+    }
+
+    auto handler = SettingHandler(init, setting_logger);
+
+    auto dflt = std::make_shared<SettingReaderDefault>();
+    handler.importFromReader(dflt, layer_handler.defaultLayer());
+
+    log.notice() << "Setting initialization DONE. ";
+    handler.printSettings();
 
     auto connection = sdbus::createSessionBusConnection();
     connection->requestName(DBUS_SERVICE);
@@ -87,11 +93,11 @@ int main(int argc, char *argv[])
     std::vector<std::shared_ptr<DBusGeshSetting>> dbus_settings;
 
     auto dbus_logger = Log("dbus");
-    auto manager_setting_if = SettingInterface("management");
-    auto dbus_manager = std::make_shared<DBusGeshManagement>(*connection, &handler, &manager_setting_if, dbus_logger);
+    std::string management_path = "management";
+    auto dbus_manager = std::make_shared<DBusGeshManagement>(*connection, &handler, &layer_handler, management_path, dbus_logger);
 
     for ( auto & iface : init.Interfaces() ) {
-        auto manager = std::make_shared<DBusGeshSetting>(*connection, &handler, iface, dbus_logger);
+        auto manager = std::make_shared<DBusGeshSetting>(*connection, &handler, &layer_handler, iface, dbus_logger);
         iface->RegisterManager(manager);
         dbus_settings.push_back(manager);
     }

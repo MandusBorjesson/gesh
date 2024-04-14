@@ -1,8 +1,9 @@
 #include "setting.h"
 #include <iomanip>
 #include <iostream>
+#include <limits>
 
-std::string toString(const setting_t &setting) {
+std::optional<std::string> toString(const setting_t &setting) {
     if (std::holds_alternative<std::string>(setting)) {
         return std::get<std::string>(setting);
     }
@@ -12,23 +13,33 @@ std::string toString(const setting_t &setting) {
     if (std::holds_alternative<bool>(setting)) {
         return std::get<bool>(setting) ? "True" : "False";
     }
-    return "-";
+    return std::nullopt;
 }
 
 Setting::Setting(const std::string &name,
-                 std::shared_ptr<ISettingSource> source,
                  ISettingRule *rule,
+                 ISettingStorage *storage,
                  std::vector<SettingInterface*> readers,
-                 std::vector<SettingInterface*> writers) : m_name(name), m_source(source), m_rule(rule), m_readers(readers), m_writers(writers) {
+                 std::vector<SettingInterface*> writers) : m_name(name), m_rule(rule), m_storage(storage), m_readers(readers), m_writers(writers) {
     if (!m_rule) {
         throw SettingRuleMissingException(name);
     }
+    if (!m_storage) {
+        throw SettingException(name);
+    }
 }
 
-bool Setting::Set(const std::optional<setting_t> &value, std::shared_ptr<ISettingSource> source) {
+bool Setting::Set(const std::optional<setting_t> &value, SettingLayer *layer) {
     setting_t new_value = m_rule->ToSetting(value);
 
-    m_source = source;
+    m_storage->Push(m_name, toString(new_value));
+
+    int old_prio = m_layer ? m_layer->priority() : std::numeric_limits<int>::min();
+    int new_prio = layer ? layer->priority() : std::numeric_limits<int>::min();
+    if (old_prio > new_prio) {
+        return false;
+    }
+    m_layer = layer;
 
     if (m_value == new_value) {
         return false;
@@ -39,14 +50,6 @@ bool Setting::Set(const std::optional<setting_t> &value, std::shared_ptr<ISettin
 
 setting_t Setting::Get() const {
     return m_value;
-}
-
-std::string Setting::Source() const {
-    if (m_source) {
-        return m_source->Alias();
-    } else {
-        return "None";
-    }
 }
 
 bool Setting::canRead(SettingInterface *iface) {
@@ -92,8 +95,7 @@ public:
 };
 
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
-                               std::vector<std::shared_ptr<ISettingReader>> &readers,
-                               Log &logger): m_interfaces(initializer.Interfaces()), log(logger.getChild("handler")) {
+                               Log &logger): m_interfaces(initializer.Interfaces()), m_storages(initializer.Storages()), log(logger.getChild("handler")) {
     log.notice() << "Settings handler instantiated, initializing settings... ";
 
     auto settings = initializer.InitializeSettings();
@@ -101,11 +103,12 @@ SettingHandler::SettingHandler(ISettingInitializer &initializer,
         m_settings[setting.Name()] = setting;
     }
 
-    for (auto reader : readers) {
-        readSettings(reader);
+    for (auto storage : m_storages) {
+        readSettings(storage);
     }
+}
 
-    log.notice() << "Setting initialization DONE. ";
+void SettingHandler::printSettings() {
     _prettyPrint(m_settings);
 }
 
@@ -127,10 +130,14 @@ void SettingHandler::_prettyPrint(const std::map<std::string, Setting> &updated)
     constexpr auto W_KEY = 25;
     constexpr auto W_VAL = 20;
     constexpr auto W_IFC = 10;
+    constexpr auto W_STO = 10;
+    constexpr auto W_LAY = 10;
 
     log.info() << std::left << std::setw(W_KEY) << "Key"
                << std::setw(W_VAL) << "Value"
                << std::setw(W_IFC*m_interfaces.size()) << "Permissions"
+               << std::setw(W_STO) << "Storage"
+               << std::setw(W_LAY) << "Layer"
                << "  " << "Source";
     auto os = log.info();
 
@@ -143,9 +150,10 @@ void SettingHandler::_prettyPrint(const std::map<std::string, Setting> &updated)
     for ( auto const& [key, val] : m_settings ) {
 
         auto os = log.info();
+        auto val_str = toString(val.Get());
         os << std::left;
         os << std::setw(W_KEY) << key
-           << std::setw(W_VAL) << toString(val.Get());
+           << std::setw(W_VAL) << val_str.value_or("-");
 
         for (const auto interface : m_interfaces) {
             std::string perm;
@@ -153,7 +161,21 @@ void SettingHandler::_prettyPrint(const std::map<std::string, Setting> &updated)
             perm.append(m_settings[key].canWrite(interface) ? "w" : "-");
             os << std::setw(W_IFC) << perm;
         }
-        os << "  " << val.Source();
+        os << std::setw(W_STO) << val.Storage()->Alias();
+        if (auto lay = val.Layer()) {
+            os << std::setw(W_LAY) << lay->name();
+
+            // Don't print source for the default layer. Coincidentally, this
+            // is the only layer with prio lower than 0.
+            if (lay->priority() < 0) {
+                os << "  -";
+            } else {
+                os << "  " << val.Storage()->LayerAlias(lay);
+            }
+        } else {
+            os << std::setw(W_LAY) << "-";
+            os << "  -";
+        }
     }
 }
 
@@ -175,29 +197,81 @@ void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_
     }
 }
 
-void SettingHandler::readSettings(std::shared_ptr<ISettingReader> reader) {
-    log.info() << "Fetching settings from " << reader->Alias();
+void SettingHandler::importFromReader(std::shared_ptr<ISettingReader> reader, SettingLayer *layer) {
+    if (!reader) {
+        throw SettingException("No valid reader provided");
+    }
+
+    if (!layer) {
+        throw SettingException("No valid layer provided");
+    }
+
+    log.info() << "Getting settings from " << reader->Alias();
     std::map<std::string, setting_t> updated;
-    for (auto setting : reader->GetSettings()) {
-        if (m_settings.find(setting.first) == m_settings.end()) {
-            log.warning() << "Unknown setting: " << setting.first;
+    auto settings = reader->GetSettings();
+    log.info() << settings.size() << " settings fetched, updating internal values...";
+
+    for (auto element : settings) {
+        auto key = element.first;
+        auto value = element.second;
+        if (m_settings.find(key) == m_settings.end()) {
+            log.warning() << "Unknown setting: " << key;
             continue;
         }
+
         try {
-            auto val = m_settings[setting.first].Rule()->ToSetting(setting.second);
-            if(m_settings[setting.first].Set(val, reader)) {
-                updated[setting.first] = val;
+            auto val = m_settings[key].Rule()->ToSetting(value);
+            if(m_settings[key].Set(val, layer)) {
+                updated[key] = val;
+                log.debug() << "Value of " << key << " updated to " << value.value_or("<un-initialized>");
             }
         } catch ( SettingException const& ex ) {
-            log.warning() << "Failed to set setting: " << setting.first << ", " << ex.what();
+            log.warning() << "Failed to set setting: " << key << ", " << ex.what();
             continue;
         }
-        log.debug() << "Value of " << setting.first << " updated to " << setting.second.value_or("<un-initialized>");
     }
     _handleUpdatedSettings(updated);
 }
 
-void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface) {
+void SettingHandler::readSettings(ISettingStorage* storage) {
+    log.info() << "Fetching settings from " << storage->Alias();
+    std::map<std::string, setting_t> updated;
+    auto settings = storage->GetSettings();
+    log.info() << settings.size() << " settings fetched, updating internal values...";
+
+    for (auto element : settings) {
+        auto key = element.first;
+        auto layer = element.second.first;
+        auto value = element.second.second;
+        if (m_settings.find(key) == m_settings.end()) {
+            log.warning() << "Unknown setting: " << key;
+            continue;
+        }
+
+        if (storage != m_settings[key].Storage()) {
+            log.warning() << "Source pollution detected, ignoring: " << key;
+            continue;
+        }
+
+        try {
+            auto val = m_settings[key].Rule()->ToSetting(value);
+            if(m_settings[key].Set(val, layer)) {
+                updated[key] = val;
+            }
+        } catch ( SettingException const& ex ) {
+            log.warning() << "Failed to set setting: " << key << ", " << ex.what();
+            continue;
+        }
+        log.debug() << "Value of " << key << " updated to " << value.value_or("<un-initialized>");
+    }
+    _handleUpdatedSettings(updated);
+}
+
+
+void SettingHandler::Set(const std::map<std::string, setting_t> &settings, SettingInterface *iface, SettingLayer *layer) {
+    if (!layer) {
+        throw SettingException("No valid layer provided");
+    }
     for ( auto const& [key, val] : settings ) {
         if (m_settings.find(key) == m_settings.end()) {
             throw SettingKeyException(key);
@@ -209,12 +283,20 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
         // Will throw if validation fails
         m_settings[key].Rule()->ToSetting(val);
     }
+    for ( auto const& storage : m_storages ) {
+        storage->Clear();
+    }
+
     std::map<std::string, setting_t> updated;
     for ( auto const& [key, val] : settings ) {
         // The above call to 'ToSetting' should ensure no exceptions are thrown here.
-        if(m_settings[key].Set(val, nullptr)) {
+        if(m_settings[key].Set(val, layer)) {
             updated[key] = val;
         }
+    }
+
+    for ( auto const& storage : m_storages ) {
+        storage->Flush(layer);
     }
 
     _handleUpdatedSettings(updated);

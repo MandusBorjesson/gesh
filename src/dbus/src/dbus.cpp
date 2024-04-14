@@ -31,7 +31,7 @@ std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DBus
     return out;
 }
 
-void DBusGeshSetting::Set(const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
+void DBusGeshSetting::Set(const std::string &layer, const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate) {
     log.notice() << "Set called";
 
     std::map<std::string, setting_t> in;
@@ -44,7 +44,7 @@ void DBusGeshSetting::Set(const std::map<std::string, sdbus::Variant>& update, c
     }
 
     try {
-        m_handler->Set(in, m_iface);
+        m_handler->Set(in, m_iface, m_layerHandler->findLayer(layer));
     } catch ( SettingException const & ex ) {
         log.warning() << "Set failed: " << ex.what();
         throw sdbus::Error("own.gesh.Error", ex.what());
@@ -96,15 +96,12 @@ void DBusGeshSetting::handleSettingsUpdated(const std::map<std::string, setting_
     }
 }
 
-void DBusGeshManagement::Import(const std::string& file) {
+void DBusGeshManagement::Import(const std::string& layer, const std::string& file) {
     log.info() << "Import called: " << file;
-    auto factory = SettingReaderFactory({}, log);
-    auto reader = factory.getReader(file);
-
-    if (!reader.has_value()) {
-        std::string err = "Failed to get reader for '" + file + "'";
-        throw sdbus::Error("own.gesh.Error", err);
+    try {
+        m_handler->importFromReader(Factory::Reader(file), m_layerHandler->findLayer(layer));
+    } catch ( SettingException const & ex ) {
+        log.warning() << "Import failed: " << ex.what();
+        throw sdbus::Error("own.gesh.Error", ex.what());
     }
-
-    m_handler->readSettings(reader.value());
 }
