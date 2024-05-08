@@ -2,6 +2,32 @@
 #include "settingReaderFile.h"
 #include <algorithm>
 
+bool SettingStorageFile::handle_args(std::vector<std::pair<std::string, bool>> &args, Log &log) {
+    bool ret = false;
+    for (int i = 0; i < args.size(); i++) {
+        if (args[i].first == "-h" || args[i].first == "--help") {
+            args[i].second = true;
+
+            log.none() << "Options - File Storage";
+            log.none() << " --storage-file-path <path>   (required) Path to where setting file fragments are stored";
+            log.none();
+            return true;
+        }
+        if (args[i].first == "--storage-file-path") {
+            if (i+1 < args.size()) {
+                m_basePath = args[i+1].first;
+
+                // Consume flag and arg, jump ahead
+                args[i].second = true;
+                args[i+1].second = true;
+                i++;
+                ret = true;
+            }
+        }
+    }
+    return ret;
+}
+
 std::map<std::string, std::pair<SettingLayer*, std::optional<std::string>>> SettingStorageFile::GetSettings() {
     std::map<std::string, std::pair<SettingLayer*, std::optional<std::string>>> ret;
     for ( auto layer : m_layers ) {
