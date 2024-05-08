@@ -19,6 +19,7 @@ private:
 class SettingLayerHandler {
 public:
     SettingLayerHandler() : m_default(SettingLayer("default", -100)) {};
+    bool handle_args(std::vector<std::pair<std::string, bool>> &args, Log &log);
     void initialize(std::string layers);
     SettingLayer* findLayer(std::string name);
     std::vector<SettingLayer*> layers();

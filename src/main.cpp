@@ -19,18 +19,6 @@ void signalHandler( int signum ) {
    exit(signum);
 }
 
-void print_help() {
-    auto log = Log();
-    log.none() << "Usage:";
-    log.none() << " gesh [options]";
-    log.none();
-    log.none() << "Options:";
-    log.none() << " -l, --layers <l1>,<l2>...    Space-separated list of layers to use";
-    log.none();
-    log.none() << " -h, --help                   display this help";
-    log.none() << " -v, --version                display version";
-}
-
 int main(int argc, char *argv[])
 {
     signal(SIGINT, signalHandler);
@@ -40,36 +28,58 @@ int main(int argc, char *argv[])
     log.info() << "Git SHA: " << BUILD_VERSION;
     log.info() << "Build: " << BUILD_DATE;
 
-    log = Log("main");
-
-    SettingLayerHandler layer_handler;
-
+    // The pair in 'args' should be read as 'argument', 'consumed'. The latter
+    // indicates wether a class has consumed the argument.
+    std::vector<std::pair<std::string, bool>> args;
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
+        args.push_back(std::make_pair(argv[i], false));
+    }
+    for (auto & [arg, consumed] : args) {
         if (arg == "-h" || arg == "--help") {
-            print_help();
-            return 0;
-        } else if (arg == "-v" || arg == "--version") {
-            return 0;
-        } else if (arg == "-l" || arg == "--layers") {
-            // Try to grab the next argument, a string
-            if (i+1 < argc) {
-                layer_handler.initialize(std::string(argv[i+1]));
-                i++;
-            } else {
-                log.error() << "Missing argument after " << arg;
-                print_help();
-                return 1;
-            }
-        } else {
-            log.error() << "Unknown argument: " << arg;
-            print_help();
-            return 1;
+            consumed = true;
+
+            log.none() << "Usage:";
+            log.none() << " gesh [options]";
+            log.none();
+            log.none() << "Options:";
+            log.none() << " -h, --help                   display this help";
+            log.none();
+        }
+    }
+    SettingLayerHandler layer_handler;
+    if(!layer_handler.handle_args(args, log)) {
+        log.none() << "Required arguments missing for layer handler!";
+        return -1;
+    }
+
+    auto init = SettingInitializerDefault();
+    for ( auto storage : init.Storages() ) {
+        if (!storage->handle_args(args, log)) {
+            log.none() << "Required arguments missing for handler: " << storage->Alias();
+            return -1;
         }
     }
 
+    // Check if help flag was provided
+    for (auto & [arg, consumed] : args) {
+        if (arg == "-h" || arg == "--help") {
+            return 0;
+        }
+    }
+
+    // Check for non-consumed args
+    for (auto & [arg, consumed] : args) {
+        if (consumed == false) {
+            log.none() << "Unhandled argument: " << arg;
+            log.none() << "Use --help for usage.";
+            return -1;
+        }
+    }
+
+    log = Log("main");
+
     auto setting_logger = Log("setting");
-    auto init = SettingInitializerDefault();
 
     std::vector<SettingLayer*> layers = layer_handler.layers();
     for ( auto storage : init.Storages() ) {

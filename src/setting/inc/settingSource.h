@@ -16,6 +16,8 @@ class Setting;
 class ISettingStorage {
 public:
     ISettingStorage(const std::string &name) : m_alias(name) {};
+    virtual bool handle_args(std::vector<std::pair<std::string, bool>> &args, Log &log) { return true; };
+
     virtual std::map<std::string, std::pair<SettingLayer*, std::optional<std::string>>> GetSettings() = 0;
     void registerLayers(std::vector<SettingLayer*> layers) { m_layers = layers; };
     const std::string Alias() { return m_alias; };

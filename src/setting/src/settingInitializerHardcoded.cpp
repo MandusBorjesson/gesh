@@ -15,8 +15,7 @@ auto hwIface = new SettingInterface("hardware");
 auto netIface = new SettingInterface("network");
 
 auto logger = Log("storage");
-std::string file_path = "../";
-auto storageFile = new SettingStorageFile(file_path, logger);
+auto storageFile = new SettingStorageFile(logger);
 
 std::map<std::string, std::optional<std::string>> SettingReaderDefault::GetSettings() {
     return {
