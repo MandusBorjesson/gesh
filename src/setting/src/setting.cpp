@@ -20,7 +20,8 @@ Setting::Setting(const std::string &name,
                  ISettingRule *rule,
                  ISettingStorage *storage,
                  std::vector<SettingInterface*> readers,
-                 std::vector<SettingInterface*> writers) : m_name(name), m_rule(rule), m_storage(storage), m_readers(readers), m_writers(writers) {
+                 std::vector<SettingInterface*> writers,
+                 std::string gatekeeper) : m_name(name), m_rule(rule), m_storage(storage), m_readers(readers), m_writers(writers), m_gatekeeper(gatekeeper) {
     if (!m_rule) {
         throw SettingRuleMissingException(name);
     }
@@ -94,6 +95,11 @@ public:
     SettingNoValueException(const std::string &msg) : SettingException(msg, ".novalue") {}
 };
 
+class SettingDisabledException : public SettingException {
+public:
+    SettingDisabledException(const std::string &msg) : SettingException(msg, ".disabled") {}
+};
+
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
                                Log &logger): m_interfaces(initializer.Interfaces()), m_storages(initializer.Storages()), log(logger.getChild("handler")) {
     log.notice() << "Settings handler instantiated, initializing settings... ";
@@ -118,6 +124,9 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
     }
     if (!m_settings[key].canRead(iface)) {
         throw SettingAccessException(key);
+    }
+    if (!_isEnabled(m_settings[key])) {
+        throw SettingDisabledException(key);
     }
     auto val = m_settings[key].Get();
     if (std::holds_alternative<std::monostate>(val)) {
@@ -194,6 +203,22 @@ void SettingHandler::_handleUpdatedSettings(const std::map<std::string, setting_
         } else {
             log.debug() << "Interface '" << interface->Name() << "' has no manager, skipping";
         }
+    }
+}
+
+bool SettingHandler::_isEnabled(const Setting &setting) const {
+    std::string gatekeeper_key = setting.Gatekeeper();
+    if (gatekeeper_key == "") {
+        return true;
+    }
+    if (m_settings.find(gatekeeper_key) == m_settings.end()) {
+        return false;
+    }
+    auto val = m_settings.at(gatekeeper_key).Get();
+    if (std::holds_alternative<bool>(val)) {
+        return std::get<bool>(val);
+    } else {
+        return false;
     }
 }
 
@@ -290,9 +315,13 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
     std::map<std::string, setting_t> updated;
     for ( auto const& [key, val] : settings ) {
         // The above call to 'ToSetting' should ensure no exceptions are thrown here.
-        if(m_settings[key].Set(val, layer)) {
-            updated[key] = val;
+        if(!m_settings[key].Set(val, layer)) {
+            continue;
         }
+        if(!_isEnabled(m_settings[key])) {
+            continue;
+        }
+        updated[key] = val;
     }
 
     for ( auto const& storage : m_storages ) {
@@ -305,9 +334,13 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
 std::map<std::string, Setting> SettingHandler::GetAll(SettingInterface *iface) const {
     std::map<std::string, Setting> ret;
     for ( auto entry : m_settings ) {
-        if(entry.second.canRead(iface)) {
-            ret[entry.first] = entry.second;
+        if(!entry.second.canRead(iface)) {
+            continue;
         }
+        if(!_isEnabled(entry.second)) {
+            continue;
+        }
+        ret[entry.first] = entry.second;
     }
     return ret;
 }

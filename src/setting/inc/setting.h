@@ -22,11 +22,12 @@ public:
             ISettingRule *rule,
             ISettingStorage *storage,
             std::vector<SettingInterface*> readers,
-            std::vector<SettingInterface*> writers
-            );
+            std::vector<SettingInterface*> writers,
+            std::string gatekeeper = "");
     bool Set(const std::optional<setting_t> &value, SettingLayer *layer);
     setting_t Get() const;
     std::string Name() const { return m_name; };
+    std::string Gatekeeper() const { return m_gatekeeper; };
     ISettingStorage* Storage() const { return m_storage; };
     SettingLayer* Layer() const { return m_layer; };
     ISettingRule* Rule() const {return m_rule;};
@@ -41,6 +42,7 @@ private:
     ISettingRule *m_rule;
     std::vector<SettingInterface*> m_readers;
     std::vector<SettingInterface*> m_writers;
+    std::string m_gatekeeper;
     Log log;
 };
 
@@ -59,6 +61,7 @@ public:
 private:
     void _prettyPrint(const std::map<std::string, Setting> &updated);
     void _handleUpdatedSettings(const std::map<std::string, setting_t> &updated);
+    bool _isEnabled(const Setting &setting) const;
     std::map<std::string, Setting> m_settings;
     std::vector<SettingInterface*> m_interfaces;
     std::vector<ISettingStorage*> m_storages;

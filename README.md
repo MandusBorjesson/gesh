@@ -92,4 +92,15 @@ Note that storages may also opt not to honor layers and instead store all its
 values in a single place. This is perfectly acceptable, but be aware that the
 above use case will not work for such solutions.
 
+### Gatekeeping settings
+Some settings may not be relevant unless another setting is also set. One
+example for such a situation is when a system may support a specific piece of
+hardware, and that hardware has a number of configuration parameters.
 
+GESH solves this situation through the use of "gatekeeper" settings.
+Gatekeepers shall be boolean in type and when referenced by another setting,
+the setting will only be fetchable of the gatekeeper is set to `true`. If the
+gatekeeper is unset, not a boolean or set to `false`, the setting is masked
+from calls to `GetAll` and calling `Get` on the setting will return the error
+`setting.disabled`. `Set` calls are still allowed, but the setting will not be
+included in the map passed to the `ISettingApiManager` classes.
