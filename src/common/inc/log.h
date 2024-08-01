@@ -14,6 +14,7 @@ namespace {
         ALERT,
         FATAL,
         NONE,
+        SILENT,
     };
 }
 
@@ -42,42 +43,57 @@ std::string getColor(LogLevel level) {
 
 class JournalLog {
 public:
-    JournalLog(const std::string &name, LogLevel level) {
+    JournalLog(const std::string &name, LogLevel level) : m_muted(level == SILENT){
+        if (m_muted) {
+            return;
+        }
         operator << (getColor(level) + (level == NONE ? "" : "<"+std::to_string(level)+"> ") +
                     (name.empty() ? "" : "["+name+"] "));
     }
     ~JournalLog() {
-        std::cout << getColor(NONE) << std::endl;
+        if (!m_muted) {
+            std::cout << getColor(NONE) << std::endl;
+        }
     }
     template<class T>
     JournalLog &operator<<(const T &msg) {
-        std::cout << msg;
+        if (!m_muted) {
+            std::cout << msg;
+        }
         return *this;
     }
+private:
+    bool m_muted;
 };
 
 class Log {
 public:
-    Log(): m_name("") {};
+    Log(): Log("") {};
     Log(std::string name): m_name(std::move(name)) {
         for ( auto & c : m_name ) {
             if ( ! isalnum( c ) ) c = '.';
         }
     };
 
-    Log getChild(std::string name)  { return Log(m_name + "." + name); };
+    void mute(bool mute = true) { m_muted = mute; };
+    Log getChild(std::string name) {
+        Log child = Log(m_name + "." + name);
+        child.mute(m_muted);
+        return child;
+    };
 
-    JournalLog fatal() const { return JournalLog(m_name, FATAL); };
-    JournalLog alert() const { return JournalLog(m_name, ALERT); };
-    JournalLog critical() const { return JournalLog(m_name, CRITICAL); };
-    JournalLog error() const { return JournalLog(m_name, ERROR); };
-    JournalLog warning() const { return JournalLog(m_name, WARNING); };
-    JournalLog notice() const { return JournalLog(m_name, NOTICE); };
-    JournalLog info() const { return JournalLog(m_name, INFO); };
-    JournalLog debug() const { return JournalLog(m_name, DEBUG); };
-    JournalLog none() const { return JournalLog(m_name, NONE); };
+    JournalLog fatal() const { return JournalLog(m_name, (m_muted ? SILENT : FATAL)); };
+    JournalLog alert() const { return JournalLog(m_name, (m_muted ? SILENT : ALERT)); };
+    JournalLog critical() const { return JournalLog(m_name, (m_muted ? SILENT : CRITICAL)); };
+    JournalLog error() const { return JournalLog(m_name, (m_muted ? SILENT : ERROR)); };
+    JournalLog warning() const { return JournalLog(m_name, (m_muted ? SILENT : WARNING)); };
+    JournalLog notice() const { return JournalLog(m_name, (m_muted ? SILENT : NOTICE)); };
+    JournalLog info() const { return JournalLog(m_name, (m_muted ? SILENT : INFO)); };
+    JournalLog debug() const { return JournalLog(m_name, (m_muted ? SILENT : DEBUG)); };
+    JournalLog none() const { return JournalLog(m_name, (m_muted ? SILENT : NONE)); };
 private:
     std::string m_name;
+    bool m_muted{false};
 };
 
 #endif  /* LOG_H  */
