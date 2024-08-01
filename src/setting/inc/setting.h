@@ -20,6 +20,31 @@ class ISettingStorage;
 class ISettingInitializer;
 class ISettingReader;
 
+class SettingHandlerException : public SettingException {
+public:
+    SettingHandlerException(const std::string &msg) : SettingException(msg, ".handler") {}
+};
+
+class SettingKeyException : public SettingException {
+public:
+    SettingKeyException(const std::string &msg) : SettingException(msg, ".key") {}
+};
+
+class SettingAccessException : public SettingException {
+public:
+    SettingAccessException(const std::string &msg) : SettingException(msg, ".access") {}
+};
+
+class SettingNoValueException : public SettingException {
+public:
+    SettingNoValueException(const std::string &msg) : SettingException(msg, ".novalue") {}
+};
+
+class SettingDisabledException : public SettingException {
+public:
+    SettingDisabledException(const std::string &msg) : SettingException(msg, ".disabled") {}
+};
+
 class Setting {
 public:
     Setting() = default;
