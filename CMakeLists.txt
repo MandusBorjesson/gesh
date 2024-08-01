@@ -2,9 +2,14 @@
 # PROJECT INFORMATION
 #-------------------------------
 
-set(APP gesh)
-
 cmake_minimum_required(VERSION 3.13)
+
+option(BUILD_TEST "Set up and build unit tests" OFF)
+
+set(APP gesh)
+if(BUILD_TEST)
+    set(APP ${APP}_test)
+endif()
 
 project(${APP} VERSION 0.0.1 LANGUAGES CXX)
 

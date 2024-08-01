@@ -79,31 +79,6 @@ bool Setting::canWrite(SettingInterface *iface) const {
     return false;
 }
 
-class SettingHandlerException : public SettingException {
-public:
-    SettingHandlerException(const std::string &msg) : SettingException(msg, ".handler") {}
-};
-
-class SettingKeyException : public SettingException {
-public:
-    SettingKeyException(const std::string &msg) : SettingException(msg, ".key") {}
-};
-
-class SettingAccessException : public SettingException {
-public:
-    SettingAccessException(const std::string &msg) : SettingException(msg, ".access") {}
-};
-
-class SettingNoValueException : public SettingException {
-public:
-    SettingNoValueException(const std::string &msg) : SettingException(msg, ".novalue") {}
-};
-
-class SettingDisabledException : public SettingException {
-public:
-    SettingDisabledException(const std::string &msg) : SettingException(msg, ".disabled") {}
-};
-
 SettingHandler::SettingHandler(ISettingInitializer &initializer,
                                Log &logger): m_interfaces(initializer.Interfaces()), m_storages(initializer.Storages()), log(logger.getChild("handler")) {
     log.notice() << "Settings handler instantiated, initializing settings... ";
