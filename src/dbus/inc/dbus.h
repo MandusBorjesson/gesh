@@ -11,6 +11,7 @@ std::string SETTING_SUBPATH = "settings/";
 }
 
 using dbusGet_t = std::tuple<std::map<std::string, sdbus::Variant>, std::map<std::string, std::string>>;
+using dbusGetAll_t = std::map<std::string, sdbus::Struct<std::string, int, sdbus::Variant>>;
 
 class ManagerAdaptor : public sdbus::AdaptorInterfaces< sdbus::ObjectManager_adaptor >
 {
@@ -48,7 +49,7 @@ public:
     }
 
     dbusGet_t Get(const std::vector<std::string>& keys) override;
-    std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> GetAll() override;
+    dbusGetAll_t GetAll() override;
     void Set(const std::string &layer, const std::map<std::string, sdbus::Variant>& update, const std::vector<std::string>& invalidate);
 
     void handleSettingsUpdated(const std::map<std::string, setting_t>& settings);

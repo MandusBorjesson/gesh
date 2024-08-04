@@ -39,6 +39,7 @@ public:
         _validate(val);
         return val;
     }
+    virtual const std::string AsString() const = 0;
 
 protected:
     virtual setting_t _fromStr(const std::string &value) = 0;
@@ -48,6 +49,7 @@ protected:
 class SettingRuleString: public ISettingRule {
 public:
     SettingRuleString() = default;
+    const std::string AsString() const override;
 
 protected:
     setting_t _fromStr(const std::string &value) override;
@@ -57,6 +59,7 @@ protected:
 class SettingRuleStringEnum: public SettingRuleString {
 public:
     SettingRuleStringEnum(std::vector<std::string> valid_values) : m_valids(valid_values) {};
+    const std::string AsString() const override;
 
 protected:
     void _validate(const setting_t &setting) override;
@@ -68,6 +71,7 @@ private:
 class SettingRuleBool: public ISettingRule {
 public:
     SettingRuleBool() = default;
+    const std::string AsString() const override;
 
 protected:
     setting_t _fromStr(const std::string &value) override;
@@ -77,6 +81,7 @@ protected:
 class SettingRuleRangedInt: public ISettingRule {
 public:
     SettingRuleRangedInt(int min, int max) : m_min(min), m_max(max) {};
+    const std::string AsString() const override;
 
 protected:
     setting_t _fromStr(const std::string &value) override;

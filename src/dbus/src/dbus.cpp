@@ -1,5 +1,6 @@
 #include "dbus.h"
 #include "settingReaderFactory.h"
+#include "../api/geshDbusTypes.h"
 
 dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
     log.info() << "Get called, " << keys.size() << " settings requested";
@@ -18,15 +19,30 @@ dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
     return ret;
 }
 
-std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> DBusGeshSetting::GetAll() {
-    std::tuple<std::map<std::string, sdbus::Variant>, std::vector<std::string>> out;
+dbusGetAll_t DBusGeshSetting::GetAll() {
+    dbusGetAll_t out;
+
     for (auto setting: m_handler->GetAll(m_iface)) {
-        auto val = setting.second.Get();
-        if (std::holds_alternative<std::monostate>(val)) {
-            std::get<1>(out).push_back(setting.first);
-        } else {
-            std::get<0>(out)[setting.first] = ToSdBusVariant(val);
+        int flags = setting.second.canWrite(m_iface) ? dbus::flags::WRITE : 0;
+
+        setting_t val;
+        switch(setting.second.Get(m_iface, &val)) {
+            case OK:
+                flags |= dbus::flags::READ;
+                break;
+            case ERROR_READ:
+                break;
         }
+
+        flags |= std::holds_alternative<std::monostate>(val) ? dbus::flags::NO_VALUE: 0;
+
+        if (!(flags & (dbus::flags::READ | dbus::flags::WRITE))) {
+            // The client can't read or write the setting, exclude it
+            continue;
+        }
+
+        auto ruleString = setting.second.Rule()->AsString();
+        out[setting.first] = {ruleString, flags, ToSdBusVariant(val)};
     }
     return out;
 }

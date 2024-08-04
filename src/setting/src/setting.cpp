@@ -49,11 +49,15 @@ bool Setting::Set(const std::optional<setting_t> &value, SettingLayer *layer) {
     return true;
 }
 
-setting_t Setting::Get() const {
-    return m_value;
+settingStatus Setting::Get(SettingInterface *iface, setting_t* out) const {
+    if (iface && !canRead(iface)) {
+        return ERROR_READ;
+    }
+    *out = m_value;
+    return OK;
 }
 
-bool Setting::canRead(SettingInterface *iface) {
+bool Setting::canRead(SettingInterface *iface) const {
     // nullptr is used to indicate internal access
     if (!iface) {
         return true;
@@ -66,7 +70,7 @@ bool Setting::canRead(SettingInterface *iface) {
     return false;
 }
 
-bool Setting::canWrite(SettingInterface *iface) {
+bool Setting::canWrite(SettingInterface *iface) const {
     for (auto interface : m_writers) {
         if (iface == interface) {
             return true;
@@ -122,13 +126,16 @@ setting_t SettingHandler::Get(const std::string &key, SettingInterface *iface) {
     if (m_settings.find(key) == m_settings.end()) {
         throw SettingKeyException(key);
     }
-    if (!m_settings[key].canRead(iface)) {
-        throw SettingAccessException(key);
+    setting_t val;
+    switch(m_settings[key].Get(iface, &val)) {
+        case OK:
+            break;
+        case ERROR_READ:
+            throw SettingAccessException(key);
     }
     if (!_isEnabled(m_settings[key])) {
         throw SettingDisabledException(key);
     }
-    auto val = m_settings[key].Get();
     if (std::holds_alternative<std::monostate>(val)) {
         throw SettingNoValueException(key);
     }
@@ -159,7 +166,10 @@ void SettingHandler::_prettyPrint(const std::map<std::string, Setting> &updated)
     for ( auto const& [key, val] : m_settings ) {
 
         auto os = log.info();
-        auto val_str = toString(val.Get());
+        setting_t setting_value;
+        // Errors here are fine, setting_value will simply not be updated
+        std::ignore = val.Get(nullptr, &setting_value);
+        auto val_str = toString(setting_value);
         os << std::left;
         os << std::setw(W_KEY) << key
            << std::setw(W_VAL) << val_str.value_or("-");
@@ -214,7 +224,10 @@ bool SettingHandler::_isEnabled(const Setting &setting) const {
     if (m_settings.find(gatekeeper_key) == m_settings.end()) {
         return false;
     }
-    auto val = m_settings.at(gatekeeper_key).Get();
+    setting_t val;
+    // If this fails for any reason, val should remain monostate and we will return false
+    std::ignore = m_settings.at(gatekeeper_key).Get(nullptr, &val);
+
     if (std::holds_alternative<bool>(val)) {
         return std::get<bool>(val);
     } else {
@@ -334,9 +347,6 @@ void SettingHandler::Set(const std::map<std::string, setting_t> &settings, Setti
 std::map<std::string, Setting> SettingHandler::GetAll(SettingInterface *iface) const {
     std::map<std::string, Setting> ret;
     for ( auto entry : m_settings ) {
-        if(!entry.second.canRead(iface)) {
-            continue;
-        }
         if(!_isEnabled(entry.second)) {
             continue;
         }
