@@ -28,14 +28,16 @@
         </method>
         <!--
             GetAll:
-	    @settings: Setting names and values.
-	    @uninitialized: Settings that do not have a value.
+        @settings: Key-value pairs with setting name as key, values:
+                    * Setting rule
+                    * Setting flags (as defined by dbus::flags)
+                    * Setting value (invalid if dbus::flags::NO_VALUE is set)
 
-	    Get all settings provided by the D-Bus object.
+        Get all active settings provided by the D-Bus object that the client is
+        allowed to either read or write.
         -->
         <method name="GetAll">
-            <arg type="a{sv}" name="settings" direction="out" />
-            <arg type="as" name="uninitialized" direction="out" />
+            <arg type="a{s(siv)}" name="settings" direction="out" />
         </method>
         <!--
             Set:

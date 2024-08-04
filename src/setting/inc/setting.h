@@ -10,6 +10,11 @@
 #include <ostream>
 #include <optional>
 
+enum settingStatus {
+    OK,
+    ERROR_READ,
+};
+
 class ISettingRule;
 class ISettingStorage;
 class ISettingInitializer;
@@ -25,14 +30,21 @@ public:
             std::vector<SettingInterface*> writers,
             std::string gatekeeper = "");
     bool Set(const std::optional<setting_t> &value, SettingLayer *layer);
-    setting_t Get() const;
+    /**
+     * \brief Get the value contained in the setting
+     * \param iface the interface requesting the value.
+     * \param out if the function returns OK, the value will be stored in this
+     *        pointer. In all other cases, it will be unchanged.
+     * \return OK if get request was successful.
+     */
+    [[nodiscard]] settingStatus Get(SettingInterface *iface, setting_t* out) const;
     std::string Name() const { return m_name; };
     std::string Gatekeeper() const { return m_gatekeeper; };
     ISettingStorage* Storage() const { return m_storage; };
     SettingLayer* Layer() const { return m_layer; };
     ISettingRule* Rule() const {return m_rule;};
-    bool canRead(SettingInterface *iface);
-    bool canWrite(SettingInterface *iface);
+    bool canRead(SettingInterface *iface) const;
+    bool canWrite(SettingInterface *iface) const;
 
 private:
     std::string m_name;
