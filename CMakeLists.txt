@@ -45,17 +45,4 @@ add_custom_target(
 )
 
 add_subdirectory(cmake)
-
-add_dbus_interface(
-    SERVER
-    ${PROJECT_SOURCE_DIR}/api/owl.gesh.setting.xml
-    dbus-setting.h
-)
-
-add_dbus_interface(
-    SERVER
-    ${PROJECT_SOURCE_DIR}/api/owl.gesh.management.xml
-    dbus-management.h
-)
-
 add_subdirectory(src)
