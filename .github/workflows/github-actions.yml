@@ -1,0 +1,16 @@
+name: CI
+run-name: CI started by ${{ github.actor }} 🚀
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Configure and build unit tests
+        run: cmake -S . -B build_test -DBUILD_TEST=ON && cmake --build build_test
+      - name: Run unit tests
+        run: ./build_test/src/gesh_test
