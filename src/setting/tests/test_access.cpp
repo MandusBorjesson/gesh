@@ -4,7 +4,7 @@
 class SettingAccessTest : public SettingTest {};
 
 TEST_F(SettingAccessTest, InvalidPermissions) {
-    EXPECT_THROW(m_handler->Set({{"b1", true}}, &m_interface1, m_layer1), SettingAccessException);
+    EXPECT_THROW(m_handler->Set({{"b124", true}}, &m_interface1, m_layer1), SettingAccessException);
 }
 
 TEST_F(SettingAccessTest, InvalidKey) {
