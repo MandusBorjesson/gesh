@@ -10,7 +10,7 @@ internally. In the example, GESH provides two interface handlers with one
 client connected to each of them. In theory, there is no limit to the number
 or type of interfaces nor the number of clients connected to each of them.
 
-![Overview](./documentation/overview.svg) <img src="./documentation/overview.svg">
+![Overview](./documentation/overview.svg)
 
 ```mermaid
 ---
