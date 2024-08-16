@@ -51,3 +51,5 @@ add_custom_target(
 
 add_subdirectory(cmake)
 add_subdirectory(src)
+
+install(TARGETS ${APP} DESTINATION ${CMAKE_INSTALL_BINDIR})
