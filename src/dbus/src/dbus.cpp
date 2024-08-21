@@ -2,6 +2,16 @@
 #include "settingReaderFactory.h"
 #include "../api/geshDbusTypes.h"
 
+std::unique_ptr<sdbus::IConnection> getDbusConnection() {
+#if defined(DBUS_BUS_SYSTEM)
+    return sdbus::createSystemBusConnection();
+#elif defined(DBUS_BUS_SESSION)
+    return sdbus::createSessionBusConnection();
+#else
+    static_assert(false, "No valid DBus bus selected");
+#endif
+}
+
 dbusGet_t DBusGeshSetting::Get(const std::vector<std::string>& keys) {
     log.info() << "Get called, " << keys.size() << " settings requested";
 

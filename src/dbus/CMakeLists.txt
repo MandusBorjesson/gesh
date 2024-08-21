@@ -15,6 +15,18 @@ target_link_libraries(gesh_dbus PRIVATE
     sdbus-c++
 )
 
+set(dbus_bus_options "system" "session")
+set(DBUS_BUS "none" CACHE STRING "Select which DBus bus to use, avaliable options: [$dbus_bus_options]")
+set_property(CACHE DBUS_BUS PROPERTY STRINGS ${dbus_bus_options})
+
+if(${DBUS_BUS} STREQUAL "system")
+    target_compile_options(gesh_dbus PUBLIC "-DDBUS_BUS_SYSTEM")
+elseif(${DBUS_BUS} STREQUAL "session")
+    target_compile_options(gesh_dbus PUBLIC "-DDBUS_BUS_SESSION")
+else()
+    message(FATAL_ERROR "DBUS_BUS must be set to one of: ${dbus_bus_options}")
+endif ()
+
 function(add_dbus_interface interface_type xml output)
   if(${interface_type} STREQUAL "SERVER")
     set(DBUS_IF_ARG "--adaptor")
