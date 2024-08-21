@@ -63,7 +63,7 @@ void DBusGeshSetting::Set(const std::string &layer, const std::map<std::string, 
         m_handler->Set(in, m_iface, m_layerHandler->findLayer(layer));
     } catch ( SettingException const & ex ) {
         log.warning() << "Set failed: " << ex.what();
-        throw sdbus::Error("own.gesh.Error", ex.what());
+        throw sdbus::Error("owl.gesh.Error", ex.what());
     }
 
 }
@@ -89,7 +89,7 @@ setting_t DBusGeshSetting::ToSetting(const sdbus::Variant &val) const {
         return bool(val);
     } else {
         auto err = "Unknown variant type '" + type + "'";
-        throw sdbus::Error("own.gesh.Error", err);
+        throw sdbus::Error("owl.gesh.Error", err);
     }
 }
 
@@ -118,6 +118,6 @@ void DBusGeshManagement::Import(const std::string& layer, const std::string& fil
         m_handler->importFromReader(Factory::Reader(file), m_layerHandler->findLayer(layer));
     } catch ( SettingException const & ex ) {
         log.warning() << "Import failed: " << ex.what();
-        throw sdbus::Error("own.gesh.Error", ex.what());
+        throw sdbus::Error("owl.gesh.Error", ex.what());
     }
 }
