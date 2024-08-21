@@ -1,3 +1,6 @@
+#ifndef DBUS_H_
+#define DBUS_H_
+
 #include "dbus-management.h"
 #include "dbus-setting.h"
 #include "setting.h"
@@ -9,6 +12,8 @@ namespace {
 std::string DBUS_PATH = "/owl/gesh/";
 std::string SETTING_SUBPATH = "settings/";
 }
+
+std::unique_ptr<sdbus::IConnection> getDbusConnection();
 
 using dbusGet_t = std::tuple<std::map<std::string, sdbus::Variant>, std::map<std::string, std::string>>;
 using dbusGetAll_t = std::map<std::string, sdbus::Struct<std::string, int, sdbus::Variant>>;
@@ -89,3 +94,5 @@ private:
     SettingLayerHandler *m_layerHandler;
     Log log;
 };
+
+#endif /* DBUS_H_ */

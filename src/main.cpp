@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     log.notice() << "Setting initialization DONE. ";
     handler.printSettings();
 
-    auto connection = sdbus::createSessionBusConnection();
+    auto connection = getDbusConnection();
     connection->requestName(DBUS_SERVICE);
     connection->enterEventLoopAsync();
     log.notice() << "D-Bus service name aquired. ";
