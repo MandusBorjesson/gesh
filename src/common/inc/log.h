@@ -5,14 +5,14 @@
 
 namespace {
     enum LogLevel {
-        DEBUG = 0,
-        INFO,
-        NOTICE,
-        WARNING,
-        ERROR,
-        CRITICAL,
+        FATAL = 0,
         ALERT,
-        FATAL,
+        CRITICAL,
+        ERROR,
+        WARNING,
+        NOTICE,
+        INFO,
+        DEBUG,
         NONE,
         SILENT,
     };
